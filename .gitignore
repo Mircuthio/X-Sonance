@@ -4,7 +4,8 @@
 *.Mat
 **/*.mat
 **/*.MAT
-
+*.TRC
+*.trc
 # --- ALTRI DATI EEG / PESANTI ---
 *.set
 *.fdt

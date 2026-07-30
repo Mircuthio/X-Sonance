@@ -55,7 +55,7 @@ end
 
 cfg = struct();
 
-comparisonName = 'Consonance';
+comparisonName = 'Difference';
 switch comparisonName
     case 'Consonance'
         cfg.conditions = { ...
@@ -120,7 +120,9 @@ cfgPlot.smooth_plot = false;
 cfgPlot.smooth_window = 5;
 cfgDiff.smooth_plot = false;
 cfgDiff.smooth_window = 5;
-step4_outdir = fullfile(step4_outdir,'SMOOTH');
+if cfgPlot.smooth_plot
+    step4_outdir = fullfile(step4_outdir,'SMOOTH');
+end
 %% 4) ERP and PLOT
 ERP_subj = struct();
 for iSub = 1:numel(subj_list)
@@ -287,6 +289,15 @@ for r = 1:numel(roiNames)
     if ~exist(plot_dir, 'dir'), mkdir(plot_dir); end
     Limo_plot = plot_limo_erp_comparison(limo_input.(roiName),cfgLimoPlot);
 end
+save( ...
+    fullfile(step4_outdir,'ERP_STEP3_RESULTS.mat'), ...
+    'ERP_subj', ...
+    'ERP_Pooled', ...
+    'ERP_Group', ...
+    'limo_input', ...
+    'cfg', ...
+    '-v7.3');
+
 return
 %% TOPOPLOT
 subj_topo = select_roi_channels(subj_list, ROI.ERAN);

@@ -22,5 +22,6 @@ ROI.Occipital     = {'PO7','PO3','PO8','PO4','POz','O1','O2','Oz','Iz'};
 ROI.Generic   = {'Fz','FCz','Cz','Pz','CPz'}; 
 ROI.ERAN      = {'Fp1', 'Fp2', 'AF3', 'AF4', 'F3', 'F4', 'F7', 'F8', 'FC3', 'FC4', 'Fz', 'FCz'};
 ROI.ERAN_RIGHT = {'F4','F6','F8','FC4','AF4','AF8','Fp2','F2','FC2','Fz'};
+ROI.ERAN_CORE = {'AF3','AF4','F3','F4','F7','F8','FC3','FC4','Fz','FCz'};
 ROI.MMN       = {'Fz','FCz','Cz','F3','F4','FC1','FC2','FC3','FC4'};
 ROI.N5        = {'Fz','FCz','Cz','F1','F2','F3','F4','FC1','FC2','FC3','FC4','C1','C2','C3','C4'};
