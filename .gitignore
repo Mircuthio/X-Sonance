@@ -1,0 +1,52 @@
+# --- COPRIMENTO BLINDATO FILE .MAT ---
+*.mat
+*.MAT
+*.Mat
+**/*.mat
+**/*.MAT
+
+# --- ALTRI DATI EEG / PESANTI ---
+*.set
+*.fdt
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.pdf
+*.csv
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# --- TEMPORANEI ---
+*.asv
+.DS_Store
+Thumbs.db
+# --- FILE PESANTI E DATI ---
+*.mat
+
+# --- DOCUMENTI E FOGLI DI CALCOLO ---
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.pdf
+*.csv
+*.set
+*.fdt
+*.zip
+*.dat
+*.h5
+*.nii
+# --- IMMAGINI ---
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# --- FILE TEMPORANEI MATLAB E SISTEMA ---
+*.asv
+*.m~
+.DS_Store
+Thumbs.db

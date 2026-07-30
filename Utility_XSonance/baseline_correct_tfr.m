@@ -1,0 +1,29 @@
+function powerOut = baseline_correct_tfr( ...
+    powerIn,...
+    time,...
+    baselineWin)
+
+% ============================================================
+% BASELINE_CORRECT_TFR
+%
+% dB normalization
+%
+% 10*log10(power/baseline)
+%
+% ============================================================
+
+idxBase = ...
+    time >= baselineWin(1) & ...
+    time <= baselineWin(2);
+
+assert(any(idxBase), ...
+    'Empty baseline window');
+
+baselineMean = ...
+    mean(powerIn(:,idxBase),2);
+
+baselineMean(baselineMean==0) = eps;
+
+powerOut = ...
+    10*log10( ...
+    powerIn ./ baselineMean);

@@ -1,0 +1,16 @@
+Subject: sub-031_task-AuditoryOddballChords
+Original srate: 2048.00 Hz
+Target srate: 64 Hz
+Original channels: 64
+Band-pass: 0.50 - 30.00 Hz
+Epoch window: -0.4 to 1.6 s
+Baseline: -100 to 0 ms
+Events used for epoching - standard: 1220
+Events used for epoching - exemplar: 109
+Events used for epoching - function: 111
+Trials finali - standard: 1158
+Trials finali - exemplar: 106
+Trials finali - function: 107
+ICA components removed: 1
+Median RT exemplar: NaN
+Median RT function: NaN
