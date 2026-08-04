@@ -19,9 +19,17 @@ ROI.Parietal      = {'P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','Pz'};
 ROI.Occipital     = {'PO7','PO3','PO8','PO4','POz','O1','O2','Oz','Iz'};
 
 % ROI funzionali ERP
-ROI.Generic   = {'Fz','FCz','Cz','Pz','CPz'}; 
-ROI.ERAN      = {'Fp1', 'Fp2', 'AF3', 'AF4', 'F3', 'F4', 'F7', 'F8', 'FC3', 'FC4', 'Fz', 'FCz'};
-ROI.ERAN_RIGHT = {'F4','F6','F8','FC4','AF4','AF8','Fp2','F2','FC2','Fz'};
-ROI.ERAN_CORE = {'AF3','AF4','F3','F4','F7','F8','FC3','FC4','Fz','FCz'};
-ROI.MMN       = {'Fz','FCz','Cz','F3','F4','FC1','FC2','FC3','FC4'};
-ROI.N5        = {'Fz','FCz','Cz','F1','F2','F3','F4','FC1','FC2','FC3','FC4','C1','C2','C3','C4'};
+ROI.Generic     = {'Fz','FCz','Cz','Pz','CPz'}; 
+ROI.ERAN        = {'Fp1', 'Fp2', 'AF3', 'AF4', 'F3', 'F4', 'F7', 'F8', 'FC3', 'FC4', 'Fz', 'FCz'};
+ROI.ERAN_RIGHT  = {'F4','F6','F8','FC4','AF4','AF8','Fp2','F2','FC2','Fz'};
+ROI.ERAN_CORE   = {'AF3','AF4','F3','F4','F7','F8','FC3','FC4','Fz','FCz'};
+ROI.MMN         = {'Fz','FCz','Cz','F3','F4','FC1','FC2','FC3','FC4'};
+ROI.aMMN        = {'AF3','AFz','AF4','F3','Fz','F4','FC1','FCz','FC2'};
+ROI.afMMN       = {'AF3','AFz','AF4','F1','Fz','F2'};
+ROI.N5          = {'Fz','FCz','Cz','F1','F2','F3','F4','FC1','FC2','FC3','FC4','C1','C2','C3','C4'};
+ROI.N5_FRONT    = {'F3','F1','Fz','F2','F4','FC1','FCz','FC2'};
+ROI.N5_CENTRAL  = {'FC1','FCz','FC2','C1','Cz','C2'};
+ROI.SPN_FRONTAL = {'F3','F1','Fz','F2','F4','FC1','FCz','FC2'};
+ROI.SPN_CENTRAL = {'FC1','FCz','FC2','C1','Cz','C2'};
+ROI.SPN_POSTERIOR = {'CPz','P1','Pz','P2','PO3','POz','PO4'};
+ROI.SPN_GLOBAL  = {'F3','Fz','F4','FC1','FCz','FC2','C1','Cz','C2','CP1','CPz','CP2','P1','Pz','P2'};

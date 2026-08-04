@@ -1,0 +1,239 @@
+function plot_spn_zoom( ...
+    subj_list_spn,...
+    cfgSPN,...
+    outdir)
+
+zoomDir = fullfile(outdir,'Zoom');
+
+if ~exist(zoomDir,'dir')
+    mkdir(zoomDir);
+end
+
+for r = 1:numel(cfgSPN.analysis_rois)
+
+    roiName = cfgSPN.analysis_rois{r};
+
+    roi_labels = ...
+        cfgSPN.rois.(roiName);
+
+    ERP_CON = [];
+    ERP_DIS = [];
+
+    %% ========================================================
+    % SUBJECTS
+    %% ========================================================
+
+    for iSub = 1:numel(subj_list_spn)
+
+        data_trials = ...
+            subj_list_spn(iSub).data_trials;
+
+        timeVec = ...
+            data_trials(1).time;
+
+        idxCon = strcmp( ...
+            {data_trials.eventLabel}, ...
+            'Consonant');
+
+        idxDis = strcmp( ...
+            {data_trials.eventLabel}, ...
+            'Dissonant');
+
+        ERPcon_trials = [];
+        ERPdis_trials = [];
+
+        %% ----------------------------------------------------
+        % CONSONANT
+        %% ----------------------------------------------------
+
+        for it = find(idxCon)
+
+            labels = ...
+                {data_trials(it).chanlocs.labels};
+
+            roi_idx = ...
+                ismember(labels,roi_labels);
+
+            ERPcon_trials(end+1,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:),...
+                1);
+
+        end
+
+        %% ----------------------------------------------------
+        % DISSONANT
+        %% ----------------------------------------------------
+
+        for it = find(idxDis)
+
+            labels = ...
+                {data_trials(it).chanlocs.labels};
+
+            roi_idx = ...
+                ismember(labels,roi_labels);
+
+            ERPdis_trials(end+1,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:),...
+                1);
+
+        end
+
+        ERP_CON(iSub,:) = ...
+            mean(ERPcon_trials,1);
+
+        ERP_DIS(iSub,:) = ...
+            mean(ERPdis_trials,1);
+
+    end
+
+    %% ========================================================
+    % GROUP ERP
+    %% ========================================================
+
+    ERPcon = mean(ERP_CON,1);
+
+    ERPdis = mean(ERP_DIS,1);
+
+    ERPdiff = ERPdis - ERPcon;
+
+    %% ========================================================
+    % SPN SLOPE (LATE WINDOW)
+    %% ========================================================
+
+    idxLate = ...
+        timeVec >= cfgSPN.windows{end}(1) & ...
+        timeVec <= cfgSPN.windows{end}(2);
+
+    timeLate = ...
+        timeVec(idxLate);
+
+    diffLate = ...
+        ERPdiff(idxLate);
+
+    p = polyfit( ...
+        timeLate,...
+        diffLate,...
+        1);
+
+    slopeVal = p(1);
+
+    %% ========================================================
+    % FIGURE
+    %% ========================================================
+
+    figure( ...
+        'Color','w',...
+        'Position',[100 100 1200 600]);
+
+    hold on
+
+    yL = [ ...
+        min([ERPcon ERPdis ERPdiff]) ...
+        max([ERPcon ERPdis ERPdiff])];
+
+    colors = lines(numel(cfgSPN.windows));
+
+    %% ========================================================
+    % WINDOWS
+    %% ========================================================
+
+    for iw = 1:numel(cfgSPN.windows)
+
+        win = cfgSPN.windows{iw};
+
+        patch( ...
+            [win(1) win(2) win(2) win(1)],...
+            [yL(1) yL(1) yL(2) yL(2)],...
+            colors(iw,:),...
+            'FaceAlpha',0.08,...
+            'EdgeColor','none');
+
+    end
+
+    %% ========================================================
+    % ERP CURVES
+    %% ========================================================
+
+    plot( ...
+        timeVec,...
+        ERPcon,...
+        'LineWidth',2);
+
+    plot( ...
+        timeVec,...
+        ERPdis,...
+        'LineWidth',2);
+
+    plot( ...
+        timeVec,...
+        ERPdiff,...
+        'k',...
+        'LineWidth',2);
+
+    yline(0,'k:')
+
+    xline(0,'r:',...
+        'LineWidth',1.5);
+
+    %% ========================================================
+    % AXES
+    %% ========================================================
+
+    xlim(cfgSPN.zoom_window)
+
+    xlabel('Time (s)')
+    ylabel('\muV')
+
+    title(sprintf( ...
+        '%s SPN Zoom\nLate Slope = %.4f', ...
+        roiName,...
+        slopeVal));
+
+    %% ========================================================
+    % LEGEND
+    %% ========================================================
+
+    winLabels = ...
+        cell(1,numel(cfgSPN.windows));
+
+    for iw = 1:numel(cfgSPN.windows)
+
+        win = cfgSPN.windows{iw};
+
+        winLabels{iw} = sprintf( ...
+            '%s (%d-%d ms)', ...
+            cfgSPN.window_names{iw},...
+            round(win(1)*1000),...
+            round(win(2)*1000));
+
+    end
+
+    legendLabels = [ ...
+        winLabels,...
+        {'Consonant',...
+         'Dissonant',...
+         'Difference'}];
+
+    legend( ...
+        legendLabels,...
+        'Location','best');
+
+    %% ========================================================
+    % SAVE
+    %% ========================================================
+
+    exportgraphics( ...
+        gcf,...
+        fullfile( ...
+        zoomDir,...
+        sprintf('%s_SPN_Zoom.png', ...
+        roiName)),...
+        'Resolution',300);
+
+    close
+
+end
+
+end

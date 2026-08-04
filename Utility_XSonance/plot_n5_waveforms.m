@@ -1,0 +1,163 @@
+function plot_n5_waveforms( ...
+    subj_list,...
+    cfgN5,...
+    outdir)
+
+MAIN_ROI
+
+waveDir = fullfile(outdir,'Waveforms');
+
+if ~exist(waveDir,'dir')
+    mkdir(waveDir);
+end
+
+for r = 1:numel(cfgN5.analysis_rois)
+
+    roiName = cfgN5.analysis_rois{r};
+
+    roi_labels = ...
+        cfgN5.rois.(roiName);
+
+    ERP_CON = [];
+    ERP_DIS = [];
+
+    for iSub = 1:numel(subj_list)
+
+        data_trials = ...
+            subj_list(iSub).data_trials;
+
+        timeVec = ...
+            data_trials(1).time;
+
+        idxCon = strcmp( ...
+            {data_trials.eventLabel}, ...
+            'Consonant');
+
+        idxDis = strcmp( ...
+            {data_trials.eventLabel}, ...
+            'Dissonant');
+
+        ERPcon_trials = [];
+        ERPdis_trials = [];
+
+        for it = find(idxCon)
+
+            labels = ...
+                {data_trials(it).chanlocs.labels};
+
+            roi_idx = ...
+                ismember(labels,roi_labels);
+
+            ERPcon_trials(end+1,:) = ...
+                mean(data_trials(it).eeg(roi_idx,:),1);
+
+        end
+
+        for it = find(idxDis)
+
+            labels = ...
+                {data_trials(it).chanlocs.labels};
+
+            roi_idx = ...
+                ismember(labels,roi_labels);
+
+            ERPdis_trials(end+1,:) = ...
+                mean(data_trials(it).eeg(roi_idx,:),1);
+
+        end
+
+        ERP_CON(iSub,:) = ...
+            mean(ERPcon_trials,1);
+
+        ERP_DIS(iSub,:) = ...
+            mean(ERPdis_trials,1);
+
+    end
+
+    ERPcon = mean(ERP_CON,1);
+    ERPdis = mean(ERP_DIS,1);
+
+    ERPdiff = ERPdis - ERPcon;
+    
+    winLabels = cell(1,numel(cfgN5.windows));
+
+    for iw = 1:numel(cfgN5.windows)
+
+        win = cfgN5.windows{iw};
+
+        winLabels{iw} = sprintf( ...
+            '%s (%d-%d ms)',...
+            cfgN5.window_names{iw},...
+            round(win(1)*1000),...
+            round(win(2)*1000));
+
+    end
+
+    figure( ...
+        'Color','w',...
+        'Position',[100 100 1300 600]);
+
+    hold on
+
+    yL = [ ...
+    min([ERPcon ERPdis ERPdiff]) ...
+    max([ERPcon ERPdis ERPdiff])];
+
+    colors = lines(3);
+
+    for iw = 1:numel(cfgN5.windows)
+
+        win = cfgN5.windows{iw};
+
+        patch( ...
+            [win(1) win(2) win(2) win(1)],...
+            [yL(1) yL(1) yL(2) yL(2)],...
+            colors(iw,:),...
+            'FaceAlpha',0.10,...
+            'EdgeColor','none');
+
+    end
+
+    plot(timeVec,ERPcon,...
+        'LineWidth',2);
+
+    plot(timeVec,ERPdis,...
+        'LineWidth',2);
+
+    plot(timeVec,ERPdiff,...
+        'k',...
+        'LineWidth',2);
+
+    yline(0,'k:')
+    xline(0,'k:')
+
+    xlim([-0.2 0.8])
+
+    xlabel('Time (s)')
+    ylabel('\muV')
+
+    title(sprintf( ...
+        '%s ERP', ...
+        roiName));
+
+    legendLabels = [ ...
+        winLabels,...
+        {'Consonant',...
+        'Dissonant',...
+        'Difference',...
+        'Peak N5'}];
+
+    legend( ...
+        legendLabels,...
+        'Location','best');
+
+    exportgraphics( ...
+        gcf,...
+        fullfile( ...
+        waveDir,...
+        sprintf('%s_ERP.png',roiName)),...
+        'Resolution',300);
+
+    close
+
+end
