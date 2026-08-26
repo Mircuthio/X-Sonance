@@ -1,22 +1,19 @@
 %% =========================================================================
-% MAIN_FBCSP_LOSO_STEP9
+% MAIN_FBCSP_TRIALWISE_STEP9
 %
 % PIPELINE
 %
 % subj_list
 %     ↓
 % build_fbcsp_dataset
+%     ↓
+% Stratified Hold-Out Split
+%
+% Train Trials = 80%
+% Test Trials  = 20%
 %
 %     ↓
-% apply_fbcsp_filterbank
-%
-%         eeg  → eegFB
-%
-%     ↓
-% LOSO Split
-%
-%         Test Subject  = Subject i
-%         Train Subjects = All Remaining Subjects
+% FilterBankCompute (TRAIN / TEST)
 %
 %     ↓
 % CSP Model (TRAIN ONLY)
@@ -31,12 +28,7 @@
 % MI Encode (TRAIN / TEST)
 %
 %     ↓
-% Classifier Model (TRAIN ONLY)
-%
-%         QDA
-%         KNN
-%         NB
-%         SVC
+% QDA Model (TRAIN ONLY)
 %
 %     ↓
 % Prediction (TRAIN / TEST)
@@ -46,19 +38,15 @@
 % Balanced Accuracy
 % Confusion Matrix
 %
+% Repeated N times using different random train/test splits.
 %
-% NOTES
-%
-% - FilterBank is applied once on the complete dataset before
-%   train/test splitting.
-%
-% - CSP is estimated ONLY on training subjects.
-%
-% - MI feature selection is estimated ONLY on training subjects.
-%
-% - No information from the test subject contributes to model training.
+% NOTE:
+% CSP and MI are estimated ONLY on training trials.
+% No information from the test trials contributes to the model.
 %
 %% =========================================================================
+
+
 clear
 close all
 clc
@@ -83,7 +71,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 
 outdir = fullfile( ...
     step2_indir,...
-    'STEP9_FBCSP_LOSO');
+    'STEP9_FBCSP_TRIALWISE');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
@@ -153,6 +141,11 @@ cfgFBCSP.classifiers = { ...
     'KNN',...
     'NB'};
 
+cfgFBCSP.classifiers = { ...
+    'KNN',...
+    'NB'};
+
+
 %% ------------------------------------------------------------
 % DATASET FIELDS
 %% ------------------------------------------------------------
@@ -161,10 +154,14 @@ cfgFBCSP.eventField = 'eventLabel';
 cfgFBCSP.subjectField = 'subj_id';
 
 %% ------------------------------------------------------------
-% SIGNAL FIELD
+% TRIALWISE PARAMETERS
 %% ------------------------------------------------------------
 
-cfgFBCSP.signalField = 'eegFB';
+cfgFBCSP.trainRatio = 0.80;
+cfgFBCSP.testRatio  = 0.20;
+
+cfgFBCSP.numIterations = 5;
+
 %% ------------------------------------------------------------
 % PERFORMANCE
 %% ------------------------------------------------------------
@@ -180,47 +177,25 @@ FBCSP_Dataset = build_fbcsp_dataset( ...
     subj_list,...
     cfgFBCSP);
 %% ============================================================
-% FILTER BANK
-%% ============================================================
-
-FBCSP_Dataset = ...
-    apply_fbcsp_filterbank( ...
-    FBCSP_Dataset,...
-    cfgFBCSP);
-
-%% ============================================================
-% SUBJECTS
-%% ============================================================
-
-subjectIDs = unique( ...
-    {FBCSP_Dataset.trials.subjectID});
-
-nSubjects = numel(subjectIDs);
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('LOSO SETUP\n');
-fprintf('================================\n');
-
-fprintf('Subjects: %d\n',nSubjects);
-
-%% ============================================================
 % VALIDATION STRATEGY
 %% ============================================================
 %
-% LOSO:
-%  Subject 1 → Test
-%  Subjects 2..N → Train
+% Iteration 1:
+%   Random 80/20 split
 %
-%  Subject 2 → Test
-%  Remaining Subjects → Train
+% Iteration 2:
+%   New random 80/20 split
 %
-
+% ...
+%
+% Iteration N:
+%   New random 80/20 split
+%
 %% ============================================================
-% LOSO
+% TRIAL-WISE
 %% ============================================================
 
-Results_LOSO = struct();
+Results_TrialWise = struct();
 
 for iClf = 1:numel(cfgFBCSP.classifiers)
 
@@ -236,26 +211,21 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
         classifierName);
     fprintf('================================\n');
 
-    for iSub = 1:nSubjects
-
-        testSubject = ...
-            subjectIDs{iSub};
+    for iIter = 1:cfgFBCSP.numIterations
 
         fprintf('\n');
         fprintf('--------------------------------\n');
-        fprintf('LOSO FOLD %d/%d\n', ...
-            iSub,nSubjects);
-
-        fprintf('Test Subject: %s\n', ...
-            testSubject);
+        fprintf('ITERATION %d/%d\n', ...
+            iIter,...
+            cfgFBCSP.numIterations);
 
         [TrainTrials,...
          TestTrials] = ...
-         split_loso_trials( ...
+         split_trialwise_trials( ...
          FBCSP_Dataset,...
-         testSubject);
+         cfgFBCSP);
 
-        Results_LOSO.(classifierName).Fold(iSub) = ...
+        Results_TrialWise.(classifierName).Iter(iIter) = ...
             run_fbcsp_fold( ...
             TrainTrials,...
             TestTrials,...
@@ -264,6 +234,7 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
     end
 
 end
+
 %% ============================================================
 % SUMMARY
 %% ============================================================
@@ -274,25 +245,25 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
         cfgFBCSP.classifiers{iClf};
 
     allBA = ...
-        [Results_LOSO.(classifierName).Fold.BATest];
+        [Results_TrialWise.(classifierName).Iter.BATest];
 
     allACC = ...
-        [Results_LOSO.(classifierName).Fold.ACCtest];
+        [Results_TrialWise.(classifierName).Iter.ACCtest];
 
-    Results_LOSO.(classifierName).MeanAccuracy = ...
+    Results_TrialWise.(classifierName).MeanAccuracy = ...
         mean(allACC);
 
-    Results_LOSO.(classifierName).StdAccuracy = ...
+    Results_TrialWise.(classifierName).StdAccuracy = ...
         std(allACC);
 
-    Results_LOSO.(classifierName).MeanBalancedAccuracy = ...
+    Results_TrialWise.(classifierName).MeanBalancedAccuracy = ...
         mean(allBA);
 
-    Results_LOSO.(classifierName).StdBalancedAccuracy = ...
+    Results_TrialWise.(classifierName).StdBalancedAccuracy = ...
         std(allBA);
 
-    Results_LOSO.(classifierName).cfg = cfgFBCSP;
-
+    Results_TrialWise.(classifierName).cfg = cfgFBCSP;
+    
     fprintf('\n');
     fprintf('================================\n');
     fprintf('%s SUMMARY\n', ...
@@ -300,16 +271,16 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
     fprintf('================================\n');
 
     fprintf('Mean Accuracy          : %.2f %%\n', ...
-        100 * Results_LOSO.(classifierName).MeanAccuracy);
+        100*Results_TrialWise.(classifierName).MeanAccuracy);
 
     fprintf('Std Accuracy           : %.2f %%\n', ...
-        100 * Results_LOSO.(classifierName).StdAccuracy);
+        100*Results_TrialWise.(classifierName).StdAccuracy);
 
     fprintf('Mean BalancedAccuracy  : %.2f %%\n', ...
-        100 * Results_LOSO.(classifierName).MeanBalancedAccuracy);
+        100*Results_TrialWise.(classifierName).MeanBalancedAccuracy);
 
     fprintf('Std BalancedAccuracy   : %.2f %%\n', ...
-        100 * Results_LOSO.(classifierName).StdBalancedAccuracy);
+        100*Results_TrialWise.(classifierName).StdBalancedAccuracy);
 
 end
 
@@ -319,8 +290,8 @@ end
 
 save( ...
     fullfile(outdir,...
-    'STEP9_FBCSP_LOSO.mat'),...
-    'Results_LOSO',...
+    'STEP9_FBCSP_TRIALWISE.mat'),...
+    'Results_TrialWise',...
     'FBCSP_Dataset',...
     'cfgFBCSP',...
     '-v7.3');

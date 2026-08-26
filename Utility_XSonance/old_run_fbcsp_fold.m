@@ -7,20 +7,62 @@ function Results = run_fbcsp_fold( ...
 % INITIALIZATION
 %% ============================================================
 
-signal_name = cfgFBCSP.signalField;
+signal_name = 'eeg';
 signal_process = 'CSP';
 
 %% ============================================================
 % PREPARE TRAIN
 %% ============================================================
 
-TrainEEG = TrainTrials;
+TrainEEG = prepare_fbcsp_trials( ...
+    TrainTrials);
 
 %% ============================================================
 % PREPARE TEST
 %% ============================================================
 
-TestEEG = TestTrials;
+TestEEG = prepare_fbcsp_trials( ...
+    TestTrials);
+
+%% ============================================================
+% FILTER BANK TRAIN
+%% ============================================================
+
+par = struct();
+
+par.FilterBankCompute = ...
+    FilterBankComputeParams();
+
+par.FilterBankCompute.exec = false;
+
+par.FilterBankCompute.InField = ...
+    signal_name;
+
+par.FilterBankCompute.OutField = ...
+    signal_name;
+
+par.FilterBankCompute.FilterBank = ...
+    cfgFBCSP.filterBankName;
+
+par.FilterBankCompute.fsample = ...
+    TrainTrials(1).srate;
+
+par.exec.funname = ...
+    {'FilterBankCompute'};
+
+[TrainEEG,~] = ...
+    run_trials( ...
+    TrainEEG,...
+    par);
+
+%% ============================================================
+% FILTER BANK TEST
+%% ============================================================
+
+[TestEEG,~] = ...
+    run_trials( ...
+    TestEEG,...
+    par);
 
 %% ============================================================
 % CSP MODEL (TRAIN ONLY)
@@ -312,11 +354,8 @@ Results = struct();
 Results.classifier = ...
     cfgFBCSP.classifier;
 
-Results.testSubjects = ...
-    unique({TestTrials.subjectID});
-
-Results.trainSubjects = ...
-    unique({TrainTrials.subjectID});
+Results.testSubject = ...
+    TestTrials(1).subjectID;
 
 Results.nTrainTrials = ...
     length(TrainTrials);

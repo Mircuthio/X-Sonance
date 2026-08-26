@@ -6,14 +6,17 @@
 % subj_list
 %     ↓
 % build_fbcsp_dataset
+%
+%     ↓
+% apply_fbcsp_filterbank
+%
+%         eeg  → eegFB
+%
 %     ↓
 % Stratified Hold-Out Split
 %
-% Train Trials = 80%
-% Test Trials  = 20%
-%
-%     ↓
-% FilterBankCompute (TRAIN / TEST)
+%         Train Trials = 80%
+%         Test Trials  = 20%
 %
 %     ↓
 % CSP Model (TRAIN ONLY)
@@ -28,7 +31,12 @@
 % MI Encode (TRAIN / TEST)
 %
 %     ↓
-% QDA Model (TRAIN ONLY)
+% Classifier Model (TRAIN ONLY)
+%
+%         QDA
+%         KNN
+%         NB
+%         SVC
 %
 %     ↓
 % Prediction (TRAIN / TEST)
@@ -38,11 +46,31 @@
 % Balanced Accuracy
 % Confusion Matrix
 %
-% Repeated N times using different random train/test splits.
 %
-% NOTE:
-% CSP and MI are estimated ONLY on training trials.
-% No information from the test trials contributes to the model.
+% VALIDATION STRATEGY
+%
+% Iteration 1:
+%     Random stratified 80/20 split
+%
+% Iteration 2:
+%     New random stratified 80/20 split
+%
+% ...
+%
+% Iteration N:
+%     New random stratified 80/20 split
+%
+%
+% NOTES
+%
+% - FilterBank is applied once on the complete dataset before
+%   train/test splitting.
+%
+% - CSP is estimated ONLY on training trials.
+%
+% - MI feature selection is estimated ONLY on training trials.
+%
+% - No information from test trials contributes to model training.
 %
 %% =========================================================================
 
@@ -54,6 +82,8 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
+disable_eeglab();
+PATH_XSONANCE_FBCSP
 %% ============================================================
 % LOAD DATA
 %% ============================================================
@@ -66,7 +96,6 @@ load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
 % OUTPUT
 %% ============================================================
-
 outdir = fullfile( ...
     step2_indir,...
     'STEP9_FBCSP_TRIALWISE');
@@ -141,7 +170,8 @@ cfgFBCSP.classifiers = { ...
 
 cfgFBCSP.classifiers = { ...
     'QDA',...
-    'KNN'};
+    'KNN',...
+    'NB'};
 
 
 %% ------------------------------------------------------------
@@ -150,7 +180,11 @@ cfgFBCSP.classifiers = { ...
 
 cfgFBCSP.eventField = 'eventLabel';
 cfgFBCSP.subjectField = 'subj_id';
+%% ------------------------------------------------------------
+% SIGNAL FIELD
+%% ------------------------------------------------------------
 
+cfgFBCSP.signalField = 'eegFB';
 %% ------------------------------------------------------------
 % TRIALWISE PARAMETERS
 %% ------------------------------------------------------------
@@ -173,6 +207,14 @@ cfgFBCSP.primaryMetric = ...
 
 FBCSP_Dataset = build_fbcsp_dataset( ...
     subj_list,...
+    cfgFBCSP);
+%% ============================================================
+% FILTER BANK
+%% ============================================================
+
+FBCSP_Dataset = ...
+    apply_fbcsp_filterbank( ...
+    FBCSP_Dataset,...
     cfgFBCSP);
 %% ============================================================
 % VALIDATION STRATEGY

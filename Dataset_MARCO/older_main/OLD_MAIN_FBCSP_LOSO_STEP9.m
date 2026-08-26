@@ -6,17 +6,15 @@
 % subj_list
 %     ↓
 % build_fbcsp_dataset
-%
-%     ↓
-% apply_fbcsp_filterbank
-%
-%         eeg  → eegFB
-%
 %     ↓
 % LOSO Split
 %
-%         Test Subject  = Subject i
-%         Train Subjects = All Remaining Subjects
+% Test Subject = Subject i
+%
+% Train Subjects = All Remaining Subjects
+%
+%     ↓
+% FilterBankCompute (TRAIN / TEST)
 %
 %     ↓
 % CSP Model (TRAIN ONLY)
@@ -31,12 +29,7 @@
 % MI Encode (TRAIN / TEST)
 %
 %     ↓
-% Classifier Model (TRAIN ONLY)
-%
-%         QDA
-%         KNN
-%         NB
-%         SVC
+% QDA Model (TRAIN ONLY)
 %
 %     ↓
 % Prediction (TRAIN / TEST)
@@ -46,17 +39,9 @@
 % Balanced Accuracy
 % Confusion Matrix
 %
-%
-% NOTES
-%
-% - FilterBank is applied once on the complete dataset before
-%   train/test splitting.
-%
-% - CSP is estimated ONLY on training subjects.
-%
-% - MI feature selection is estimated ONLY on training subjects.
-%
-% - No information from the test subject contributes to model training.
+% NOTE:
+% CSP and MI are estimated ONLY on the training subjects.
+% No information from the test subject contributes to the model.
 %
 %% =========================================================================
 clear
@@ -161,11 +146,6 @@ cfgFBCSP.eventField = 'eventLabel';
 cfgFBCSP.subjectField = 'subj_id';
 
 %% ------------------------------------------------------------
-% SIGNAL FIELD
-%% ------------------------------------------------------------
-
-cfgFBCSP.signalField = 'eegFB';
-%% ------------------------------------------------------------
 % PERFORMANCE
 %% ------------------------------------------------------------
 
@@ -178,14 +158,6 @@ cfgFBCSP.primaryMetric = ...
 
 FBCSP_Dataset = build_fbcsp_dataset( ...
     subj_list,...
-    cfgFBCSP);
-%% ============================================================
-% FILTER BANK
-%% ============================================================
-
-FBCSP_Dataset = ...
-    apply_fbcsp_filterbank( ...
-    FBCSP_Dataset,...
     cfgFBCSP);
 
 %% ============================================================
