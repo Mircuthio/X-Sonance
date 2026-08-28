@@ -9,7 +9,7 @@ rootFolder = 'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS';
 subjectDirs = dir(fullfile(rootFolder,'Subj*'));
 subjectDirs = subjectDirs([subjectDirs.isdir]);
 
-for s = 3%1:numel(subjectDirs)
+for s = 1:numel(subjectDirs)
 
     subjName = subjectDirs(s).name;
 

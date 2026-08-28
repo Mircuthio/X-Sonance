@@ -1,6 +1,6 @@
 %% ============================================================
-% MAIN_DATASET_MARCO_ERP_STEP3_SingleTrial.m
-% Carica i dati STEP2 e instrada analisi single o group
+% STEP3_ERP.m
+% Carica i dati STEP2_EPOCHING e instrada analisi single o group
 %% ============================================================
 clear; close all; clc
 origState = get(0,'DefaultFigureVisible');
@@ -9,7 +9,7 @@ addpath(genpath('D:\eeglab2026.0.0\'))
 
 %% 1) PATH
 step2_indir = ...
-'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\SingleTrial\EPOCH_DATA';
+'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 if ~exist(step2_indir, 'dir')
     error('Cartella STEP2 non trovata: %s', step2_indir);
 end
@@ -36,13 +36,7 @@ for i = 1:nFiles
     else
         subj_list(i).subj_id = regexprep(files(i).name, '_epochData\.mat$', '');
     end
-    tokens = regexp(files(i).name,'(.*)_(trial\d+)','tokens');
-    if isempty(tokens)
-        fprintf('Skipping %s\n',matFiles(f).name);
-        continue
-    end
-    tokens = tokens{1};
-    subj_list(i).trial_id = tokens{2};
+
     if isfield(subjData, 'data_trials')
         subj_list(i).data_trials = subjData.data_trials;
     else
@@ -61,7 +55,7 @@ end
 
 cfg = struct();
 
-comparisonName = 'All';
+comparisonName = 'Difference';
 switch comparisonName
     case 'Consonance'
         cfg.conditions = { ...
@@ -120,13 +114,15 @@ fprintf('Baseline   : %.3f %.3f s\n', ...
 fprintf('Analysis   : %.3f %.3f s\n', ...
     cfg.analysis_win);
 % outputdir
-step4_outdir = fullfile(step2_indir,comparisonName);
+step3_outdir = fullfile(step2_indir,comparisonName);
 
-% cfgPlot.smooth_plot = false;
-% cfgPlot.smooth_window = 5;
-% cfgDiff.smooth_plot = false;
-% cfgDiff.smooth_window = 5;
-step4_outdir = fullfile(step4_outdir);
+cfgPlot.smooth_plot = false;
+cfgPlot.smooth_window = 5;
+cfgDiff.smooth_plot = false;
+cfgDiff.smooth_window = 5;
+if cfgPlot.smooth_plot
+    step3_outdir = fullfile(step3_outdir,'SMOOTH');
+end
 %% 4) ERP and PLOT
 ERP_subj = struct();
 for iSub = 1:numel(subj_list)
@@ -134,7 +130,6 @@ for iSub = 1:numel(subj_list)
         subj_curr = subj_list(iSub);
         subj_in   = subj_curr;   % struct 1x1, singolo soggetto
         subj_id = subj_curr.subj_id;
-        trial_id = subj_curr.trial_id;
         fprintf('\n==============================\n');
         fprintf('Soggetto: %s\n', string(subj_curr.subj_id));
         fprintf( ...
@@ -165,8 +160,7 @@ for iSub = 1:numel(subj_list)
             cfgPlot.error_data = roi_erp.grand_se;
             cfgPlot.title_str = sprintf('ERP %s - %s',string(subj_curr.subj_id),roiName);
             safeID = regexprep(string(subj_curr.subj_id),'[^\w]','_');
-            safeID = sprintf('%s_%s',safeID,trial_id);
-            save_dir = fullfile(step4_outdir, 'ERP_plots', roiName);
+            save_dir = fullfile(step3_outdir, 'ERP_plots', roiName);
             if ~exist(save_dir, 'dir'), mkdir(save_dir); end
             cfgPlot.save_path = fullfile(save_dir, sprintf('ERP_%s_%s.png', safeID, roiName));
             Subj_plot = plot_erp_waveforms(roi_erp, cfgPlot);
@@ -231,7 +225,7 @@ for r = 1:numel(roiNames)
     cfgPlot.show_error = true;
     cfgPlot.error_type = 'sem';
     cfgPlot.error_data = ERP_Pooled.(roiName).grand_se;
-    cfgPlot.save_path = fullfile(step4_outdir, 'ERP_plots', roiName, sprintf('ERP_Pooled_%s.png', roiName));
+    cfgPlot.save_path = fullfile(step3_outdir, 'ERP_plots', roiName, sprintf('ERP_Pooled_%s.png', roiName));
     [plot_dir,~,~] = fileparts(cfgPlot.save_path);
     if ~exist(plot_dir, 'dir'), mkdir(plot_dir); end
     Pooled_plot = plot_erp_waveforms(ERP_Pooled.(roiName), cfgPlot);
@@ -240,7 +234,7 @@ for r = 1:numel(roiNames)
         cfgDiff = struct();
         cfgDiff.title_str = sprintf('Pooled Difference ERP - %s',roiName);
         cfgDiff.save_path = fullfile( ...
-            step4_outdir,'ERP_plots',roiName,sprintf('ERP_Pooled_Difference_%s.png',roiName));
+            step3_outdir,'ERP_plots',roiName,sprintf('ERP_Pooled_Difference_%s.png',roiName));
         plot_difference_wave(ERP_Pooled.(roiName),cfgDiff);
     end
     %% Group-average ERP
@@ -259,7 +253,7 @@ for r = 1:numel(roiNames)
     cfgPlot.show_error = true;
     cfgPlot.error_type = 'sem';
     cfgPlot.error_data = ERP_Group.(roiName).grand_se;
-    cfgPlot.save_path = fullfile(step4_outdir, 'ERP_plots', roiName, sprintf('ERP_Group_%s.png', roiName));
+    cfgPlot.save_path = fullfile(step3_outdir, 'ERP_plots', roiName, sprintf('ERP_Group_%s.png', roiName));
     [plot_dir,~,~] = fileparts(cfgPlot.save_path);
     if ~exist(plot_dir, 'dir'), mkdir(plot_dir); end
     Group_plot = plot_erp_waveforms(ERP_Group.(roiName), cfgPlot);
@@ -267,7 +261,7 @@ for r = 1:numel(roiNames)
         cfgDiff = struct();
         cfgDiff.title_str = sprintf('Difference ERP - %s',roiName);
         cfgDiff.save_path = ...
-            fullfile(step4_outdir,'ERP_plots',roiName,sprintf('ERP_Difference_%s.png',roiName));
+            fullfile(step3_outdir,'ERP_plots',roiName,sprintf('ERP_Difference_%s.png',roiName));
         Diff_plot = plot_difference_wave(ERP_Group.(roiName),cfgDiff);
     end
     %% Prepare ROI-by-subject matrices for LIMO
@@ -290,53 +284,118 @@ for r = 1:numel(roiNames)
         ];
     cfgLimoPlot.ci_alpha = 0.15;
     cfgLimoPlot.title_str =  sprintf('Limo-Group ERP - %s', roiName);
-    cfgLimoPlot.save_path = fullfile(step4_outdir, 'ERP_plots', roiName, sprintf('Limo_Group_%s.png', roiName));
+    cfgLimoPlot.save_path = fullfile(step3_outdir, 'ERP_plots', roiName, sprintf('Limo_Group_%s.png', roiName));
     [plot_dir,~,~] = fileparts(cfgLimoPlot.save_path);
     if ~exist(plot_dir, 'dir'), mkdir(plot_dir); end
     Limo_plot = plot_limo_erp_comparison(limo_input.(roiName),cfgLimoPlot);
 end
-return
-% %% TOPOPLOT
-% subj_topo = select_roi_channels(subj_list, ROI.ERAN);
-% 
-% cfg.erpWindows = struct();
-% cfg.erpWindows.ERAN = [0.15 0.25];
-% cfg.erpWindows.N5   = [0.45 0.55];
-% cfg.erpWindows.MMN  = [0.10 0.20];
-% 
-% cfgTopo = struct();
-% cfgTopo.conditions = cfg.conditions;
-% cfgTopo.cond_field = cfg.cond_field;
-% cfgTopo.time_field = cfg.time_field;
-% 
-% cfgTopo.window = cfg.erpWindows.ERAN;
-% cfgTopo.window = cfg.erpWindows.N5;
-% cfgTopo.window = [0.18 0.23];
-% cfgTopo.measure = 'min';
-% 
-% ERPTopo = create_difference_topography(subj_list,cfgTopo);
-% [min(ERPTopo.values) max(ERPTopo.values)]
-% T = table( ...
-% string({ERPTopo.chanlocs.labels})', ...
-% ERPTopo.subject_values(3,:)', ...
-% 'VariableNames',{'Channel','Value'});
-% 
-% sortrows(T,'Value','descend')
-% 
-% figure
-% for s=1:size(ERPTopo.subject_values,1)
-%     subplot(2,3,s)
-%     topoplot( ...
-%         ERPTopo.subject_values(s,:), ...
-%         ERPTopo.chanlocs, ...
-%         'electrodes','off');
-%     title(sprintf('Subj%d',s))
-% end
-% 
-% cfgTopoPlot = struct();
-% cfgTopoPlot.title_str ='ERAN Difference Topography';
-% cfgTopoPlot.clim = [];
-% plot_difference_topoplot(ERPTopo,cfgTopoPlot);
-% 
-% 
-% set(0,'DefaultFigureVisible',origState);
+%% ============================================================
+% ERP TOPOPLOTS
+%% ============================================================
+cfgERPTopo = struct();
+
+cfgERPTopo.enable = true;
+
+cfgERPTopo.erpWindows = struct();
+
+cfgERPTopo.erpWindows.ERAN = [0.15 0.25];
+
+cfgERPTopo.erpWindows.MMN = [0.10 0.20];
+
+cfgERPTopo.erpWindows.N5 = [0.45 0.55];
+
+cfgERPTopo.conditions = ...
+    cfg.conditions;
+
+cfgERPTopo.cond_field = ...
+    cfg.cond_field;
+
+cfgERPTopo.time_field = ...
+    cfg.time_field;
+
+cfgERPTopo.measure = 'mean';
+
+topo_outdir = ...
+    fullfile( ...
+    step3_outdir,...
+    'ERP_TOPOPLOTS');
+
+if ~exist(topo_outdir,'dir')
+
+    mkdir(topo_outdir);
+
+end
+
+ERP_Topography = struct();
+
+windowNames = ...
+    fieldnames( ...
+    cfgERPTopo.erpWindows);
+
+for w = 1:numel(windowNames)
+
+    windowName = ...
+        windowNames{w};
+
+    cfgTopo = struct();
+
+    cfgTopo.conditions = ...
+        cfg.conditions;
+
+    cfgTopo.cond_field = ...
+        cfg.cond_field;
+
+    cfgTopo.time_field = ...
+        cfg.time_field;
+
+    cfgTopo.window = ...
+        cfgERPTopo.erpWindows.(windowName);
+
+    cfgTopo.measure = ...
+        cfgERPTopo.measure;
+
+    ERPTopo = ...
+        create_difference_topography( ...
+        subj_list,...
+        cfgTopo);
+
+    ERP_Topography.(windowName) = ...
+        ERPTopo;
+
+    cfgTopoPlot = struct();
+
+    cfgTopoPlot.title_str = ...
+        sprintf( ...
+        '%s Difference Topography',...
+        windowName);
+
+    cfgTopoPlot.save_path = ...
+        fullfile( ...
+        topo_outdir,...
+        sprintf( ...
+        'ERP_TOPO_%s.png',...
+        windowName));
+
+    cfgTopoPlot.clim = [];
+
+    plot_difference_topoplot( ...
+        ERPTopo,...
+        cfgTopoPlot);
+
+end
+%% ============================================================
+% SAVE
+%% ============================================================
+
+save( ...
+    fullfile( ...
+    step3_outdir,...
+    'ERP_STEP3_RESULTS.mat'), ...
+    'ERP_subj', ...
+    'ERP_Pooled', ...
+    'ERP_Group', ...
+    'ERP_Topography', ...
+    'limo_input', ...
+    'cfg', ...
+    'cfgERPTopo', ...
+    '-v7.3');

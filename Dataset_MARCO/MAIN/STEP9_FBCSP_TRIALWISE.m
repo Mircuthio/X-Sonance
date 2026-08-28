@@ -1,79 +1,7 @@
 %% =========================================================================
+% STEP9_FBCSP_TRIALWISE
 % MAIN_FBCSP_TRIALWISE_STEP9
-%
-% PIPELINE
-%
-% subj_list
-%     ↓
-% build_fbcsp_dataset
-%
-%     ↓
-% apply_fbcsp_filterbank
-%
-%         eeg  → eegFB
-%
-%     ↓
-% Stratified Hold-Out Split
-%
-%         Train Trials = 80%
-%         Test Trials  = 20%
-%
-%     ↓
-% CSP Model (TRAIN ONLY)
-%
-%     ↓
-% CSP Encode (TRAIN / TEST)
-%
-%     ↓
-% MI Model (TRAIN ONLY)
-%
-%     ↓
-% MI Encode (TRAIN / TEST)
-%
-%     ↓
-% Classifier Model (TRAIN ONLY)
-%
-%         QDA
-%         KNN
-%         NB
-%         SVC
-%
-%     ↓
-% Prediction (TRAIN / TEST)
-%
-%     ↓
-% Accuracy
-% Balanced Accuracy
-% Confusion Matrix
-%
-%
-% VALIDATION STRATEGY
-%
-% Iteration 1:
-%     Random stratified 80/20 split
-%
-% Iteration 2:
-%     New random stratified 80/20 split
-%
-% ...
-%
-% Iteration N:
-%     New random stratified 80/20 split
-%
-%
-% NOTES
-%
-% - FilterBank is applied once on the complete dataset before
-%   train/test splitting.
-%
-% - CSP is estimated ONLY on training trials.
-%
-% - MI feature selection is estimated ONLY on training trials.
-%
-% - No information from test trials contributes to model training.
-%
 %% =========================================================================
-
 
 clear
 close all
@@ -83,13 +11,12 @@ origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
 disable_eeglab();
-PATH_XSONANCE_FBCSP
+
 %% ============================================================
 % LOAD DATA
 %% ============================================================
-
 step2_indir = ...
-'D:\X-SONANCE\Dataset_MARCO\';
+    'D:\X-SONANCE\Dataset_MARCO\';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 
@@ -107,13 +34,11 @@ end
 %% ============================================================
 % CONFIGURATION
 %% ============================================================
-
 cfgFBCSP = struct();
 
 %% ------------------------------------------------------------
 % RANDOM SEED
 %% ------------------------------------------------------------
-
 cfgFBCSP.randomSeed = 10;
 
 rng('default')
@@ -122,7 +47,6 @@ rng(cfgFBCSP.randomSeed)
 %% ------------------------------------------------------------
 % CLASSES
 %% ------------------------------------------------------------
-
 cfgFBCSP.class_labels = { ...
     'Consonant',...
     'Dissonant'};
@@ -135,106 +59,84 @@ cfgFBCSP.labelMap.Dissonant = 2;
 %% ------------------------------------------------------------
 % TIME WINDOW
 %% ------------------------------------------------------------
-
 cfgFBCSP.time_window = [-0.5 1.0];
 
 %% ------------------------------------------------------------
 % FILTER BANK
 %% ------------------------------------------------------------
-
 cfgFBCSP.useFilterBank = true;
 cfgFBCSP.filterBankName = 'EEGbands';
 
 %% ------------------------------------------------------------
 % CSP
 %% ------------------------------------------------------------
-
 cfgFBCSP.csp_components = 4;
 
 %% ------------------------------------------------------------
 % MUTUAL INFORMATION
 %% ------------------------------------------------------------
-
 cfgFBCSP.useMI = true;
 cfgFBCSP.mi_k = 5;
 
 %% ------------------------------------------------------------
 % CLASSIFIERS
 %% ------------------------------------------------------------
-
 cfgFBCSP.classifiers = { ...
     'QDA',...
     'SVC',...
     'KNN',...
     'NB'};
 
-cfgFBCSP.classifiers = { ...
-    'QDA',...
-    'KNN',...
-    'NB'};
-
-
 %% ------------------------------------------------------------
 % DATASET FIELDS
 %% ------------------------------------------------------------
-
 cfgFBCSP.eventField = 'eventLabel';
-cfgFBCSP.subjectField = 'subj_id';
+
+cfgFBCSP.subjectField = ...
+    'subj_id';
+
 %% ------------------------------------------------------------
 % SIGNAL FIELD
 %% ------------------------------------------------------------
+cfgFBCSP.signalField = ...
+    'eegFB';
 
-cfgFBCSP.signalField = 'eegFB';
 %% ------------------------------------------------------------
 % TRIALWISE PARAMETERS
 %% ------------------------------------------------------------
-
 cfgFBCSP.trainRatio = 0.80;
-cfgFBCSP.testRatio  = 0.20;
+
+cfgFBCSP.testRatio = 0.20;
+
+cfgFBCSP.kfold = 4;
 
 cfgFBCSP.numIterations = 100;
 
 %% ------------------------------------------------------------
 % PERFORMANCE
 %% ------------------------------------------------------------
-
 cfgFBCSP.primaryMetric = ...
     'BalancedAccuracy';
 
 %% ============================================================
 % BUILD DATASET
 %% ============================================================
-
-FBCSP_Dataset = build_fbcsp_dataset( ...
+FBCSP_Dataset = ...
+    build_fbcsp_dataset( ...
     subj_list,...
     cfgFBCSP);
+
 %% ============================================================
 % FILTER BANK
 %% ============================================================
-
 FBCSP_Dataset = ...
     apply_fbcsp_filterbank( ...
     FBCSP_Dataset,...
     cfgFBCSP);
-%% ============================================================
-% VALIDATION STRATEGY
-%% ============================================================
-%
-% Iteration 1:
-%   Random 80/20 split
-%
-% Iteration 2:
-%   New random 80/20 split
-%
-% ...
-%
-% Iteration N:
-%   New random 80/20 split
-%
-%% ============================================================
-% TRIAL-WISE
-%% ============================================================
 
+%% ============================================================
+% TRIAL-WISE VALIDATION
+%% ============================================================
 Results_TrialWise = struct();
 
 for iClf = 1:numel(cfgFBCSP.classifiers)
@@ -259,36 +161,179 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
             iIter,...
             cfgFBCSP.numIterations);
 
+        %% ----------------------------------------------------
+        % SPLIT
+        %% ----------------------------------------------------
         [TrainTrials,...
          TestTrials] = ...
          split_trialwise_trials( ...
          FBCSP_Dataset,...
          cfgFBCSP);
 
-        Results_TrialWise.(classifierName).Iter(iIter) = ...
-            run_fbcsp_fold( ...
+        %% ----------------------------------------------------
+        % FEATURE EXTRACTION
+        %% ----------------------------------------------------
+        Features = ...
+            run_fbcsp_features( ...
             TrainTrials,...
             TestTrials,...
             cfgFBCSP);
 
-    end
+        %% ----------------------------------------------------
+        % CLASSIFIER
+        %% ----------------------------------------------------
+        parClassifier = struct();
 
+        [TrainEEG,...
+         TestEEG,...
+         outClassifier,...
+         PredField,...
+         ProbField] = ...
+         run_classifier_fold( ...
+         Features.TrainEEG,...
+         Features.TestEEG,...
+         classifierName,...
+         parClassifier);
+
+        %% ----------------------------------------------------
+        % PREDICTION
+        %% ----------------------------------------------------
+        parPredict = ...
+            mdlPredictParams();
+
+        parPredict.InField = ...
+            Features.SignalField;
+
+        parPredict.OutField = ...
+            PredField;
+
+        parPredict.ProbField = ...
+            ProbField;
+
+        parPredict.mdl = ...
+            outClassifier.mdl;
+
+        [TrainEEG,resTrain] = ...
+            mdlPredict( ...
+            TrainEEG,...
+            parPredict);
+
+        [TestEEG,resTest] = ...
+            mdlPredict( ...
+            TestEEG,...
+            parPredict);
+
+        %% ----------------------------------------------------
+        % LABELS
+        %% ----------------------------------------------------
+        Ytrain_true = ...
+            [TrainEEG.trialType]';
+
+        Ytrain_pred = ...
+            [TrainEEG.(PredField)]';
+
+        Ytest_true = ...
+            [TestEEG.trialType]';
+
+        Ytest_pred = ...
+            [TestEEG.(PredField)]';
+
+        %% ----------------------------------------------------
+        % METRICS
+        %% ----------------------------------------------------
+        TrainMetrics = ...
+            compute_classification_metrics( ...
+            Ytrain_true,...
+            Ytrain_pred);
+
+        TestMetrics = ...
+            compute_classification_metrics( ...
+            Ytest_true,...
+            Ytest_pred);
+
+        %% ----------------------------------------------------
+        % STORE RESULTS
+        %% ----------------------------------------------------
+        IterResult = struct();
+
+        IterResult.classifier = ...
+            classifierName;
+
+        IterResult.nTrainTrials = ...
+            numel(TrainTrials);
+
+        IterResult.nTestTrials = ...
+            numel(TestTrials);
+
+        IterResult.nFeatures = ...
+            Features.nFeatures;
+
+        IterResult.CSPModel = ...
+            Features.CSPModel;
+
+        IterResult.MIModel = ...
+            Features.MIModel;
+
+        IterResult.Model = ...
+            outClassifier;
+
+        IterResult.TrainMetrics = ...
+            TrainMetrics;
+
+        IterResult.TestMetrics = ...
+            TestMetrics;
+
+        IterResult.Ytrain_true = ...
+            Ytrain_true;
+
+        IterResult.Ytrain_pred = ...
+            Ytrain_pred;
+
+        IterResult.Ytest_true = ...
+            Ytest_true;
+
+        IterResult.Ytest_pred = ...
+            Ytest_pred;
+
+        IterResult.resTrain = ...
+            resTrain;
+
+        IterResult.resTest = ...
+            resTest;
+
+        Results_TrialWise.(classifierName).Iter(iIter) = ...
+            IterResult;
+
+    end
 end
 
 %% ============================================================
 % SUMMARY
 %% ============================================================
-
 for iClf = 1:numel(cfgFBCSP.classifiers)
 
     classifierName = ...
         cfgFBCSP.classifiers{iClf};
 
-    allBA = ...
-        [Results_TrialWise.(classifierName).Iter.BATest];
-
     allACC = ...
-        [Results_TrialWise.(classifierName).Iter.ACCtest];
+        arrayfun( ...
+        @(x) x.TestMetrics.ACC,...
+        Results_TrialWise.(classifierName).Iter);
+
+    allBA = ...
+        arrayfun( ...
+        @(x) x.TestMetrics.BA,...
+        Results_TrialWise.(classifierName).Iter);
+
+    allF1 = ...
+        arrayfun( ...
+        @(x) x.TestMetrics.F1,...
+        Results_TrialWise.(classifierName).Iter);
+
+    allMCC = ...
+        arrayfun( ...
+        @(x) x.TestMetrics.MCC,...
+        Results_TrialWise.(classifierName).Iter);
 
     Results_TrialWise.(classifierName).MeanAccuracy = ...
         mean(allACC);
@@ -302,32 +347,56 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
     Results_TrialWise.(classifierName).StdBalancedAccuracy = ...
         std(allBA);
 
-    Results_TrialWise.(classifierName).cfg = cfgFBCSP;
-    
+    Results_TrialWise.(classifierName).MeanF1 = ...
+        mean(allF1,'omitnan');
+
+    Results_TrialWise.(classifierName).StdF1 = ...
+        std(allF1,'omitnan');
+
+    Results_TrialWise.(classifierName).MeanMCC = ...
+        mean(allMCC,'omitnan');
+
+    Results_TrialWise.(classifierName).StdMCC = ...
+        std(allMCC,'omitnan');
+
+    Results_TrialWise.(classifierName).cfg = ...
+        cfgFBCSP;
+
     fprintf('\n');
     fprintf('================================\n');
     fprintf('%s SUMMARY\n', ...
         classifierName);
     fprintf('================================\n');
 
-    fprintf('Mean Accuracy          : %.2f %%\n', ...
+    fprintf('Mean Accuracy         : %.2f %%\n', ...
         100*Results_TrialWise.(classifierName).MeanAccuracy);
 
-    fprintf('Std Accuracy           : %.2f %%\n', ...
+    fprintf('Std Accuracy          : %.2f %%\n', ...
         100*Results_TrialWise.(classifierName).StdAccuracy);
 
-    fprintf('Mean BalancedAccuracy  : %.2f %%\n', ...
+    fprintf('Mean BalancedAccuracy : %.2f %%\n', ...
         100*Results_TrialWise.(classifierName).MeanBalancedAccuracy);
 
-    fprintf('Std BalancedAccuracy   : %.2f %%\n', ...
+    fprintf('Std BalancedAccuracy  : %.2f %%\n', ...
         100*Results_TrialWise.(classifierName).StdBalancedAccuracy);
+
+    fprintf('Mean F1               : %.4f\n', ...
+        Results_TrialWise.(classifierName).MeanF1);
+
+    fprintf('Std F1                : %.4f\n', ...
+        Results_TrialWise.(classifierName).StdF1);
+
+    fprintf('Mean MCC              : %.4f\n', ...
+        Results_TrialWise.(classifierName).MeanMCC);
+
+    fprintf('Std MCC               : %.4f\n', ...
+        Results_TrialWise.(classifierName).StdMCC);
 
 end
 
 %% ============================================================
 % SAVE
 %% ============================================================
-
 save( ...
     fullfile(outdir,...
     'STEP9_FBCSP_TRIALWISE.mat'),...

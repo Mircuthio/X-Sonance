@@ -1,25 +1,130 @@
 %% =========================================================================
-% MAIN_DATASET_MARCO_TFR_STEP4
+% STEP4_TFR_MORLET
+%% =========================================================================
+%
+% Full-spectrum Morlet Time-Frequency analysis
+% 
+% Frequency range:
+% 1-90 Hz
+% 
+% Baseline:
+% -200 ms to 0 ms
+% 
+% Summary window:
+% 0-800 ms
+% 
+% Outputs:
+%     TFR_Subj
+%     TFR_Group
+%     TFRBandResults
+%     Band-specific summaries
+% =========================================================================
+% ROI STRATEGIES
 % =========================================================================
 %
-% PROJECT
-% -------
-% X-SONANCE EEG
+% CHANNEL-FIRST
 %
-% PURPOSE
-% -------
-% Time-Frequency analysis for replication of:
+%     Wavelet decomposition is performed separately
+%     for each channel and power is averaged within ROI.
 %
-% Park et al. (2011)
-% "Consonant chords stimulate higher EEG gamma activity
-% than dissonant chords"
-%
-% Current comparison:
-%
-% Trigger 7 = Consonant
-% Trigger 8 = Dissonant
+%     Advantages:
+%         - preserves channel-specific oscillatory activity
+%         - minimizes phase-cancellation effects
+%         - recommended approach
 %
 %
+% ROI-FIRST
+%
+%     EEG channels are averaged before wavelet analysis.
+%
+%     Advantages:
+%         - simpler implementation
+%         - useful for methodological comparison
+%         - potentially closer to historical approaches
+%
+%
+% =========================================================================
+% CURRENT IMPLEMENTATION
+% =========================================================================
+%
+% Method:
+%
+%     channel_first
+%
+%
+% =========================================================================
+% PARK REPLICATION PARAMETERS
+% =========================================================================
+%
+% Frequency Range:
+%
+%     30-60 Hz
+%
+%
+% Statistical Window:
+%
+%     100-250 ms
+%
+%
+% Baseline:
+%
+%     -200 ms to -50 ms
+%
+%
+% =========================================================================
+% OUTPUTS
+% =========================================================================
+%
+% Subject-Level
+%
+%     TFR_Subj
+%
+%
+% Group-Level
+%
+%     TFR_Group
+%
+%
+% Replication Metrics
+%
+%     Consonant Gamma Power
+%     Dissonant Gamma Power
+%     Difference Gamma Power
+%
+%
+% Figures
+%
+%     Consonant TFR
+%     Dissonant TFR
+%     Difference TFR
+%
+%     Gamma Time Courses
+%
+%
+% =========================================================================
+% RELATION TO OTHER STEPS
+% =========================================================================
+%
+% STEP3_ERP
+%
+%     Event-related potentials
+%
+%
+% STEP4_BANDPOWER
+%
+%     Band-limited power envelopes
+%
+%
+% STEP4_TFR_MORLET
+%
+%     Full-spectrum TFR analysis (1-90 Hz)
+%
+%
+% STEP4_TFR_MORLET_REPLICA_PARK
+%
+%     Targeted Park et al. replication
+%
+% =========================================================================
 % =========================================================================
 % ANALYSIS STRATEGIES
 % =========================================================================
@@ -145,14 +250,14 @@ addpath(genpath('D:\eeglab2026.0.0\'))
 % LOAD STEP2 DATA
 %% ============================================================
 
-step2_indir = ...
+step4_indir = ...
     'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 
-if ~exist(step2_indir,'dir')
-    error('STEP2 folder not found:\n%s',step2_indir);
+if ~exist(step4_indir,'dir')
+    error('STEP2 folder not found:\n%s',step4_indir);
 end
 
-files = dir(fullfile(step2_indir,'*_epochData.mat'));
+files = dir(fullfile(step4_indir,'*_epochData.mat'));
 
 if isempty(files)
     error('No epoch files found');
@@ -204,17 +309,18 @@ fprintf('LOAD COMPLETED\n');
 fprintf('Subjects : %d\n',numel(subj_list));
 fprintf('Fs       : %.1f Hz\n',Fs_all(1));
 fprintf('=====================================\n');
+
 %% ============================================================
 % CONFIGURATION
 %% ============================================================
 
 cfgTFR = struct();
 
-cfgTFR.method = 'roi_first';
+cfgTFR.method = 'channel_first';
 
 % available:
-% 'channel_first'
-% 'roi_first'
+% 'channel_first' - channels time-frequency and mean
+% 'roi_first' - mean on channels before
 
 cfgTFR.conditions = { ...
     'Consonant',...
@@ -222,26 +328,47 @@ cfgTFR.conditions = { ...
 
 cfgTFR.cond_field = 'eventLabel';
 
-cfgTFR.freqs = 30:1:60;
+cfgTFR.freqs = 1:1:90;
 
 cfgTFR.nCycles = 7;
 
-cfgTFR.baseline_win = [-0.2 -0.05];
+cfgTFR.baseline_win = [-0.2 0];
 
 cfgTFR.save_trial_level = false;
 
 cfgTFR.srate = Fs_all(1);
 
 cfgTFR.time = time0;
+
+cfgTFR.summary_window = [0 0.8];
+% global post-stimulus summary window
+
+BandRanges = struct();
+
+BandRanges.Delta     = [1 4];
+BandRanges.Theta     = [4 8];
+BandRanges.Alpha     = [8 13];
+BandRanges.BetaLow   = [13 20];
+BandRanges.BetaHigh  = [20 30];
+BandRanges.GammaLow  = [30 40];
+BandRanges.GammaHigh = [40 90];
 %% ============================================================
 % ROI DEFINITIONS
 %% ============================================================
 
-MAIN_ROI_TFR
+MAIN_ROI
 
-cfgTFR.rois = ParkROI;
+cfgTFR.rois = ROI;
 
-roiNames = fieldnames(cfgTFR.rois);
+cfgTFR.analysis_rois = { ...
+    'Generic',...
+    'ERAN',...
+    'ERAN_RIGHT',...
+    'ERAN_CORE',...
+    'MMN',...
+    'N5'};
+
+roiNames = cfgTFR.analysis_rois;
 
 fprintf('\n');
 fprintf('=====================================\n');
@@ -261,17 +388,18 @@ end
 % OUTPUT FOLDER
 %% ============================================================
 
-outdir = fullfile( ...
-    step2_indir,...
-    'TFR_STEP4',cfgTFR.method);
+tfrdir = fullfile( ...
+    step4_indir,...
+    'STEP4_TFR_MORLET',...
+    cfgTFR.method);
 
-if ~exist(outdir,'dir')
-    mkdir(outdir);
+if ~exist(tfrdir,'dir')
+    mkdir(tfrdir);
 end
 
 fprintf('\n');
 fprintf('Output folder:\n');
-fprintf('%s\n',outdir);
+fprintf('%s\n',tfrdir);
 
 %% ============================================================
 % INITIALIZE OUTPUT
@@ -292,7 +420,7 @@ for iSub = 1:numel(subj_list)
     subj_curr = subj_list(iSub);
 
     subjID = matlab.lang.makeValidName( ...
-    char(subj_curr.subj_id));
+        char(subj_curr.subj_id));
 
     fprintf('\n');
     fprintf('-------------------------------------\n');
@@ -367,6 +495,7 @@ fprintf('Subjects processed: %d\n', ...
 %% ============================================================
 
 TFR_Group = struct();
+TFRBandResults = struct();
 
 fprintf('\n');
 fprintf('=====================================\n');
@@ -385,33 +514,57 @@ for r = 1:numel(roiNames)
         roiName);
 
 end
+
+%% ============================================================
+% BAND SUMMARY FROM TFR
+%% ============================================================
+bandNames = fieldnames(BandRanges);
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    for b = 1:numel(bandNames)
+
+        bandName = bandNames{b};
+
+        TFRBandResults.(roiName).(bandName) = ...
+            extract_tfr_window( ...
+            TFR_Group.(roiName),...
+            BandRanges.(bandName),...
+            cfgTFR.summary_window);
+
+    end
+
+end
 for r=1:numel(roiNames)
     roiName = roiNames{r};
     groupData = ...
         TFR_Group.(roiName);
 
-    gammaStats.(roiName) = ...
-        extract_gamma_window( ...
-        TFR_Group.(roiName),...
-        [30 60],...
-        [0.10 0.25]);
-    stats = gammaStats.(roiName);
-
-    fprintf('\n');
-    fprintf('=====================================\n');
-    fprintf('PARK WINDOW RESULTS\n');
-    fprintf('ROI : %s\n',roiName);
-    fprintf('Consonant : %.4f dB\n',stats.Consonant);
-    fprintf('Dissonant : %.4f dB\n',stats.Dissonant);
-    fprintf('Difference: %.4f dB\n',stats.Difference);
-    fprintf('=====================================\n');
-
     diffMap = groupData.Difference.power;
 
     fprintf('\n');
     fprintf('ROI: %s\n',roiName);
-    fprintf('Mean Difference: %.4f dB\n', ...
-        mean(diffMap(:)));
+    bandNames = fieldnames(TFRBandResults.(roiName));
+
+    for b = 1:numel(bandNames)
+
+        bandName = bandNames{b};
+
+        stats = ...
+            TFRBandResults.(roiName).(bandName);
+
+        fprintf('%s | CON %.4f | DIS %.4f | DIFF %.4f\n',...
+            bandName,...
+            stats.Consonant,...
+            stats.Dissonant,...
+            stats.Difference);
+
+    end
+    fprintf('Mean Broadband Difference: %.4f dB\n', ...
+    mean(diffMap(:)));
+
     figure
 
     subplot(3,1,1)
@@ -452,32 +605,35 @@ for r=1:numel(roiNames)
     saveas( ...
         gcf,...
         fullfile( ...
-        outdir,...
+        tfrdir,...
         sprintf('TFR_Group_%s.png',roiName)));
 
-    gammaConTime = ...
-    mean(groupData.Consonant.power,1);
-    gammaDisTime = ...
+    meanConTime = ...
+        mean(groupData.Consonant.power,1);
+    meanDisTime = ...
         mean(groupData.Dissonant.power,1);
-    
+% Mean power across the entire analyzed spectrum (1-90 Hz)
+
     figure
     plot(groupData.time,...
-        gammaConTime,...
+        meanConTime,...
         'LineWidth',2)
     hold on
     plot(groupData.time,...
-        gammaDisTime,...
+        meanDisTime,...
         'LineWidth',2)
     xline(0,'k')
     legend('Consonant','Dissonant')
     xlabel('Time (s)')
     ylabel('Power (dB)')
-    title(sprintf('Gamma Time Course - %s',roiName))
-    saveas( ...
+title(sprintf( ...
+    'Broadband TFR Time Course - %s',...
+    roiName))
+saveas( ...
         gcf,...
         fullfile( ...
-        outdir,...
-        sprintf('GammaTimeCourse_%s.png',roiName)));
+        tfrdir,...
+        sprintf('BroadbandTFRTimeCourse_%s.png',roiName)));
 end
 %% ============================================================
 % SAVE
@@ -485,17 +641,19 @@ end
 assert(~isempty(fieldnames(TFR_Subj)), ...
     'No subject results generated');
 save( ...
-    fullfile(outdir,'TFR_Subj.mat'),...
+    fullfile(tfrdir,...
+    'STEP4_TFR_MORLET_RESULTS.mat'),...
     'TFR_Subj',...
     'TFR_Group',...
-    'gammaStats',...
+    'TFRBandResults',...
+    'BandRanges',...
     'cfgTFR',...
-    'ParkROI',...
+    'ROI',...
     '-v7.3');
 
 fprintf('\n');
 fprintf('=====================================\n');
-fprintf('STEP4 SUBJECT LEVEL SAVED\n');
+fprintf('STEP4 TFR MORLET COMPLETED\n');
 fprintf('=====================================\n');
 
 set(0,'DefaultFigureVisible',origState);
