@@ -35,7 +35,7 @@ eventLabels(8) = 'Dissonant';
 subjectDirs = dir(fullfile(inputFolder,'Subj*'));
 subjectDirs = subjectDirs([subjectDirs.isdir]);
 
-for s = 2:numel(subjectDirs)
+for s = 1:numel(subjectDirs)
 
     subjName = subjectDirs(s).name;
 

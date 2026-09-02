@@ -9,13 +9,18 @@ function ERPTopo = create_difference_topography(subj_list,cfg)
 %
 %   Condition2 - Condition1
 %
-% Example:
-%
-%   Dissonant - Consonant
-%
 % Output is averaged across subjects.
 %
+% Processing:
+%
+%   1) Analysis window selection
+%   2) Baseline correction
+%   3) ERP computation
+%   4) Difference ERP
+%   5) Topography extraction
+%
 % ============================================================
+
 if ~isfield(cfg,'measure')
     cfg.measure = 'mean';
 end
@@ -32,7 +37,6 @@ assert(isfield(cfg,'time_field'),...
 assert(isfield(cfg,'window'),...
     'cfg.window missing');
 
-
 nSubj = numel(subj_list);
 
 trial0 = subj_list(1).data_trials(1);
@@ -40,6 +44,17 @@ trial0 = subj_list(1).data_trials(1);
 chanlocs = trial0.chanlocs;
 
 time0 = double(trial0.(cfg.time_field));
+
+if isfield(cfg,'analysis_win') && ...
+        ~isempty(cfg.analysis_win)
+
+    keep = ...
+        time0 >= cfg.analysis_win(1) & ...
+        time0 <= cfg.analysis_win(2);
+
+    time0 = time0(keep);
+
+end
 
 nChan = size(trial0.eeg,1);
 
@@ -68,36 +83,91 @@ for iSub = 1:nSubj
 
     end
 
-    % --------------------------------------------------------
-    % ERP condition A
-    % --------------------------------------------------------
+    ERPcond = cell(1,2);
 
-    eegA = cat(3,dt(idxA).eeg);
+    for cc = 1:2
 
-    erpA = mean( ...
-        eegA,...
-        3,...
-        'omitnan');
+        if cc == 1
+            idxCond = idxA;
+        else
+            idxCond = idxB;
+        end
 
-    % --------------------------------------------------------
-    % ERP condition B
-    % --------------------------------------------------------
+        nTrials = sum(idxCond);
 
-    eegB = cat(3,dt(idxB).eeg);
+        eegTrials = nan( ...
+            nChan,...
+            numel(time0),...
+            nTrials);
 
-    erpB = mean( ...
-        eegB,...
-        3,...
-        'omitnan');
+        kk = 0;
+
+        for iT = find(idxCond)
+
+            kk = kk + 1;
+
+            eeg = double(dt(iT).eeg);
+
+            t = double(dt(iT).(cfg.time_field));
+
+            % ----------------------------------------
+            % Analysis window
+            % ----------------------------------------
+
+            if isfield(cfg,'analysis_win') && ...
+                    ~isempty(cfg.analysis_win)
+
+                sel = ...
+                    t >= cfg.analysis_win(1) & ...
+                    t <= cfg.analysis_win(2);
+
+                eeg = eeg(:,sel);
+
+                t = t(sel);
+
+            end
+
+            % ----------------------------------------
+            % Baseline correction
+            % ----------------------------------------
+
+            if isfield(cfg,'baseline_win') && ...
+                    ~isempty(cfg.baseline_win)
+
+                bsel = ...
+                    t >= cfg.baseline_win(1) & ...
+                    t <= cfg.baseline_win(2);
+
+                if any(bsel)
+
+                    base = ...
+                        mean(eeg(:,bsel),...
+                        2,...
+                        'omitnan');
+
+                    eeg = eeg - base;
+
+                end
+
+            end
+
+            eegTrials(:,:,kk) = eeg;
+
+        end
+
+        ERPcond{cc} = ...
+            mean(eegTrials,3,'omitnan');
+
+    end
 
     % --------------------------------------------------------
     % Difference ERP
     % --------------------------------------------------------
 
-    diffERP = erpB - erpA;
+    diffERP = ERPcond{2} - ERPcond{1};
 
     % --------------------------------------------------------
-    % Time window
+    % Topography window
     % --------------------------------------------------------
 
     tsel = ...
@@ -125,7 +195,9 @@ for iSub = 1:nSubj
 
         otherwise
 
-            error('Unknown measure: %s',cfg.measure);
+            error( ...
+                'Unknown measure: %s',...
+                cfg.measure);
 
     end
 
