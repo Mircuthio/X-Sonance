@@ -1,18 +1,18 @@
 %% =========================================================================
-% STEP4_TFR_MORLET
+% % STEP4B_TFR_MORLET
 %% =========================================================================
 %
 % Full-spectrum Morlet Time-Frequency analysis
-% 
+%
 % Frequency range:
 % 1-90 Hz
-% 
+%
 % Baseline:
 % -200 ms to 0 ms
-% 
+%
 % Summary window:
 % 0-800 ms
-% 
+%
 % Outputs:
 %     TFR_Subj
 %     TFR_Group
@@ -245,48 +245,25 @@ origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
 addpath(genpath('D:\eeglab2026.0.0\'))
-
 %% ============================================================
-% LOAD STEP2 DATA
+% OUTPUT DIRECTORY
 %% ============================================================
+step4_outroot = ...
+    fullfile( ...
+    'D:\X-SONANCE\Dataset_MARCO',...
+    'STEP4B_TFR_MORLET');
 
-step4_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
-
-if ~exist(step4_indir,'dir')
-    error('STEP2 folder not found:\n%s',step4_indir);
+if ~exist(step4_outroot,'dir')
+    mkdir(step4_outroot);
 end
+%% ============================================================
+% LOAD DATA
+%% ============================================================
+step2_indir = ...
+    'D:\X-SONANCE\Dataset_MARCO\';
 
-files = dir(fullfile(step4_indir,'*_epochData.mat'));
+load(fullfile(step2_indir,'subj_list.mat'));
 
-if isempty(files)
-    error('No epoch files found');
-end
-
-nFiles = numel(files);
-
-subj_list = struct( ...
-    'subj_id',cell(nFiles,1), ...
-    'data_trials',cell(nFiles,1));
-
-for i = 1:nFiles
-
-    S = load(fullfile(files(i).folder,files(i).name));
-
-    subjData = S.subjectEpochData;
-    assert(isfield(subjData,'data_trials'), ...
-        'data_trials missing');
-
-    assert(~isempty(subjData.data_trials), ...
-        'Empty data_trials');
-
-    subj_list(i).subj_id = subjData.subjectID;
-
-    subj_list(i).data_trials = ...
-        subjData.data_trials;
-
-    fprintf('[%02d/%02d] Loaded %s\n',i,nFiles,string(subjData.subjectID));
-end
 % Time check
 time0 = subj_list(1).data_trials(1).time;
 
@@ -328,7 +305,7 @@ cfgTFR.conditions = { ...
 
 cfgTFR.cond_field = 'eventLabel';
 
-cfgTFR.freqs = 1:1:90;
+cfgTFR.freqs = 1:3:90; %1:1:90
 
 cfgTFR.nCycles = 7;
 
@@ -340,8 +317,14 @@ cfgTFR.srate = Fs_all(1);
 
 cfgTFR.time = time0;
 
-cfgTFR.summary_window = [0 0.8];
+cfgTFR.summary_windows.Global   = [0.00 0.80];
 % global post-stimulus summary window
+
+cfgTFR.summary_windows.EarlyNeg = [0.17 0.22];
+
+cfgTFR.summary_windows.Rebound  = [0.22 0.32];
+
+cfgTFR.summary_windows.Late     = [0.45 0.55];
 
 BandRanges = struct();
 
@@ -361,12 +344,10 @@ MAIN_ROI
 cfgTFR.rois = ROI;
 
 cfgTFR.analysis_rois = { ...
-    'Generic',...
-    'ERAN',...
-    'ERAN_RIGHT',...
     'ERAN_CORE',...
     'MMN',...
-    'N5'};
+    'FrontoCentral',...
+    'N5_CENTRAL'};
 
 roiNames = cfgTFR.analysis_rois;
 
@@ -389,8 +370,8 @@ end
 %% ============================================================
 
 tfrdir = fullfile( ...
-    step4_indir,...
-    'STEP4_TFR_MORLET',...
+    step4_outroot,...
+    'Consonance',...
     cfgTFR.method);
 
 if ~exist(tfrdir,'dir')
@@ -518,21 +499,34 @@ end
 %% ============================================================
 % BAND SUMMARY FROM TFR
 %% ============================================================
+
 bandNames = fieldnames(BandRanges);
+
+windowNames = ...
+    fieldnames(cfgTFR.summary_windows);
 
 for r = 1:numel(roiNames)
 
     roiName = roiNames{r};
 
-    for b = 1:numel(bandNames)
+    for w = 1:numel(windowNames)
 
-        bandName = bandNames{b};
+        windowName = windowNames{w};
 
-        TFRBandResults.(roiName).(bandName) = ...
-            extract_tfr_window( ...
-            TFR_Group.(roiName),...
-            BandRanges.(bandName),...
-            cfgTFR.summary_window);
+        currentWindow = ...
+            cfgTFR.summary_windows.(windowName);
+
+        for b = 1:numel(bandNames)
+
+            bandName = bandNames{b};
+
+            TFRBandResults.(roiName).(windowName).(bandName) = ...
+                extract_tfr_window( ...
+                TFR_Group.(roiName),...
+                BandRanges.(bandName),...
+                currentWindow);
+
+        end
 
     end
 
@@ -546,24 +540,39 @@ for r=1:numel(roiNames)
 
     fprintf('\n');
     fprintf('ROI: %s\n',roiName);
-    bandNames = fieldnames(TFRBandResults.(roiName));
+    windowNames = ...
+        fieldnames(cfgTFR.summary_windows);
 
-    for b = 1:numel(bandNames)
+    for w = 1:numel(windowNames)
 
-        bandName = bandNames{b};
+        windowName = windowNames{w};
 
-        stats = ...
-            TFRBandResults.(roiName).(bandName);
+        fprintf('\n');
+        fprintf('--- %s ---\n',windowName);
 
-        fprintf('%s | CON %.4f | DIS %.4f | DIFF %.4f\n',...
-            bandName,...
-            stats.Consonant,...
-            stats.Dissonant,...
-            stats.Difference);
+        currBands = ...
+            fieldnames( ...
+            TFRBandResults.(roiName).(windowName));
+
+        for b = 1:numel(currBands)
+
+            bandName = currBands{b};
+
+            stats = ...
+                TFRBandResults.(roiName).(windowName).(bandName);
+
+            fprintf( ...
+                '%s | CON %.4f | DIS %.4f | DIFF %.4f\n',...
+                bandName,...
+                stats.Consonant,...
+                stats.Dissonant,...
+                stats.Difference);
+
+        end
 
     end
     fprintf('Mean Broadband Difference: %.4f dB\n', ...
-    mean(diffMap(:)));
+        mean(diffMap(:)));
 
     figure
 
@@ -598,6 +607,10 @@ for r=1:numel(roiNames)
         groupData.freq,...
         diffMap)
 
+    mx = max(abs(diffMap(:)));
+    if mx > 0
+        clim([-mx mx]);
+    end
     axis xy
     colorbar
 
@@ -607,12 +620,23 @@ for r=1:numel(roiNames)
         fullfile( ...
         tfrdir,...
         sprintf('TFR_Group_%s.png',roiName)));
-
+    close
     meanConTime = ...
         mean(groupData.Consonant.power,1);
     meanDisTime = ...
         mean(groupData.Dissonant.power,1);
-% Mean power across the entire analyzed spectrum (1-90 Hz)
+    TFRBandResults.(roiName).Broadband.time = ...
+        groupData.time;
+
+    TFRBandResults.(roiName).Broadband.Consonant = ...
+        meanConTime;
+
+    TFRBandResults.(roiName).Broadband.Dissonant = ...
+        meanDisTime;
+
+    TFRBandResults.(roiName).Broadband.Difference = ...
+        mean(groupData.Difference.power,1);
+    % Mean power across the entire analyzed spectrum (1-90 Hz)
 
     figure
     plot(groupData.time,...
@@ -626,14 +650,104 @@ for r=1:numel(roiNames)
     legend('Consonant','Dissonant')
     xlabel('Time (s)')
     ylabel('Power (dB)')
-title(sprintf( ...
-    'Broadband TFR Time Course - %s',...
-    roiName))
-saveas( ...
+    title(sprintf( ...
+        'Broadband TFR Time Course - %s',...
+        roiName))
+    saveas( ...
         gcf,...
         fullfile( ...
         tfrdir,...
         sprintf('BroadbandTFRTimeCourse_%s.png',roiName)));
+    close
+    %% ============================================================
+    % BAND-SPECIFIC TIME COURSES
+    %% ============================================================
+
+    for b = 1:numel(bandNames)
+
+        bandName = bandNames{b};
+
+        bandRange = ...
+            BandRanges.(bandName);
+
+        idxFreq = ...
+            groupData.freq >= bandRange(1) & ...
+            groupData.freq <= bandRange(2);
+
+        conTime = ...
+            mean( ...
+            groupData.Consonant.power(idxFreq,:), ...
+            1);
+
+        disTime = ...
+            mean( ...
+            groupData.Dissonant.power(idxFreq,:), ...
+            1);
+
+        diffTime = ...
+            mean( ...
+            groupData.Difference.power(idxFreq,:), ...
+            1);
+        TFRBandResults.(roiName).TimeCourse.(bandName).time = ...
+            groupData.time;
+
+        TFRBandResults.(roiName).TimeCourse.(bandName).Consonant = ...
+            conTime;
+
+        TFRBandResults.(roiName).TimeCourse.(bandName).Dissonant = ...
+            disTime;
+
+        TFRBandResults.(roiName).TimeCourse.(bandName).Difference = ...
+            diffTime;
+        figure
+
+        plot( ...
+            groupData.time,...
+            conTime,...
+            'LineWidth',2);
+
+        hold on
+
+        plot( ...
+            groupData.time,...
+            disTime,...
+            'LineWidth',2);
+
+        plot( ...
+            groupData.time,...
+            diffTime,...
+            'k--',...
+            'LineWidth',2);
+
+        xline(0,'k');
+
+        legend( ...
+            'Consonant',...
+            'Dissonant',...
+            'Difference');
+
+        xlabel('Time (s)');
+        ylabel('Power (dB)');
+
+        title(sprintf( ...
+            '%s Time Course - %s - %s',...
+            bandName,...
+            roiName,...
+            cfgTFR.method));
+
+        saveas( ...
+            gcf,...
+            fullfile( ...
+            tfrdir,...
+            sprintf( ...
+            '%s_TimeCourse_%s.png',...
+            bandName,...
+            roiName)));
+
+        close
+
+    end
+
 end
 %% ============================================================
 % SAVE
@@ -642,7 +756,7 @@ assert(~isempty(fieldnames(TFR_Subj)), ...
     'No subject results generated');
 save( ...
     fullfile(tfrdir,...
-    'STEP4_TFR_MORLET_RESULTS.mat'),...
+    'STEP4B_TFR_MORLET_RESULTS.mat'),...
     'TFR_Subj',...
     'TFR_Group',...
     'TFRBandResults',...

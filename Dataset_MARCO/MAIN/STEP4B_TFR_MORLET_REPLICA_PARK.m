@@ -1,5 +1,5 @@
 %% =========================================================================
-% STEP4_TFR_MORLET_REPLICA_PARK
+% STEP4B_TFR_MORLET_REPLICA_PARK
 %% =========================================================================
 %
 % PROJECT
@@ -285,45 +285,26 @@ set(0,'DefaultFigureVisible','off');
 addpath(genpath('D:\eeglab2026.0.0\'))
 
 %% ============================================================
-% LOAD STEP2 DATA
+% OUTPUT DIRECTORY
 %% ============================================================
+step4_outroot = ...
+    fullfile( ...
+    'D:\X-SONANCE\Dataset_MARCO',...
+    'STEP4B_TFR_MORLET_REPLICA_PARK');
 
-step4_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
-
-if ~exist(step4_indir,'dir')
-    error('STEP2 folder not found:\n%s',step4_indir);
+if ~exist(step4_outroot,'dir')
+    mkdir(step4_outroot);
 end
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
+step4_outroot = ...
+    fullfile( ...
+    'D:\X-SONANCE\Dataset_MARCO',...
+    'STEP4B_TFR_MORLET');
 
-files = dir(fullfile(step4_indir,'*_epochData.mat'));
-
-if isempty(files)
-    error('No epoch files found');
-end
-
-nFiles = numel(files);
-
-subj_list = struct( ...
-    'subj_id',cell(nFiles,1), ...
-    'data_trials',cell(nFiles,1));
-
-for i = 1:nFiles
-
-    S = load(fullfile(files(i).folder,files(i).name));
-
-    subjData = S.subjectEpochData;
-    assert(isfield(subjData,'data_trials'), ...
-        'data_trials missing');
-
-    assert(~isempty(subjData.data_trials), ...
-        'Empty data_trials');
-
-    subj_list(i).subj_id = subjData.subjectID;
-
-    subj_list(i).data_trials = ...
-        subjData.data_trials;
-
-    fprintf('[%02d/%02d] Loaded %s\n',i,nFiles,string(subjData.subjectID));
+if ~exist(step4_outroot,'dir')
+    mkdir(step4_outroot);
 end
 % Time check
 time0 = subj_list(1).data_trials(1).time;
@@ -411,8 +392,9 @@ end
 %% ============================================================
 
 parkdir = fullfile( ...
-    step4_indir,...
-    'PARK_TFR_STEP4',cfgTFR.method);
+    step4_outroot,...
+    'PARK_TFR_STEP4',...
+    cfgTFR.method);
 
 if ~exist(parkdir,'dir')
     mkdir(parkdir);
@@ -593,7 +575,10 @@ for r=1:numel(roiNames)
         groupData.time,...
         groupData.freq,...
         diffMap)
-
+    mx = max(abs(diffMap(:)));
+    if mx > 0
+        clim([-mx mx]);
+    end
     axis xy
     colorbar
 
@@ -603,12 +588,22 @@ for r=1:numel(roiNames)
         fullfile( ...
         parkdir,...
         sprintf('TFR_Group_%s.png',roiName)));
-
+    close
     gammaConTime = ...
-    mean(groupData.Consonant.power,1);
+        mean(groupData.Consonant.power,1);
     gammaDisTime = ...
         mean(groupData.Dissonant.power,1);
-    
+    gammaDiffTime = ...
+        mean(groupData.Difference.power,1);
+    gammaStats.(roiName).TimeCourse.time = ...
+    groupData.time;
+    gammaStats.(roiName).TimeCourse.Consonant = ...
+        gammaConTime;
+    gammaStats.(roiName).TimeCourse.Dissonant = ...
+        gammaDisTime;
+    gammaStats.(roiName).TimeCourse.Difference = ...
+        gammaDiffTime;
+
     figure
     plot(groupData.time,...
         gammaConTime,...
@@ -617,8 +612,16 @@ for r=1:numel(roiNames)
     plot(groupData.time,...
         gammaDisTime,...
         'LineWidth',2)
+    plot(groupData.time,...
+        gammaDiffTime,...
+        'k--',...
+        'LineWidth',2)
+
     xline(0,'k')
-    legend('Consonant','Dissonant')
+    legend( ...
+        'Consonant',...
+        'Dissonant',...
+        'Difference');
     xlabel('Time (s)')
     ylabel('Power (dB)')
     title(sprintf('Gamma Time Course - %s',roiName))
@@ -627,6 +630,7 @@ for r=1:numel(roiNames)
         fullfile( ...
         parkdir,...
         sprintf('GammaTimeCourse_%s.png',roiName)));
+    close
 end
 %% ============================================================
 % SAVE
@@ -634,7 +638,9 @@ end
 assert(~isempty(fieldnames(TFR_Subj)), ...
     'No subject results generated');
 save( ...
-    fullfile(parkdir,'TFR_Subj.mat'),...
+    fullfile( ...
+    parkdir,...
+    'STEP4B_TFR_MORLET_REPLICA_PARK_RESULTS.mat'),...
     'TFR_Subj',...
     'TFR_Group',...
     'gammaStats',...
@@ -644,7 +650,7 @@ save( ...
 
 fprintf('\n');
 fprintf('=====================================\n');
-fprintf('STEP4 SUBJECT LEVEL SAVED\n');
+fprintf('STEP4B REPLICA PARK SUBJECT LEVEL SAVED\n');
 fprintf('=====================================\n');
 
 set(0,'DefaultFigureVisible',origState);

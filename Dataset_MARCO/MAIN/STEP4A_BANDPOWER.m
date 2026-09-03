@@ -1,5 +1,5 @@
 %% =========================================================================
-% STEP4_BANDPOWER
+% STEP4A_BANDPOWER
 % MAIN_DATASET_MARCO_BANDPOWER_STEP4
 %% =========================================================================
 %
@@ -29,11 +29,9 @@
 % STEP3
 %   Event-Related Potentials (ERP)
 %
-% STEP4
-%   Time-Frequency Analysis (Morlet Wavelets)
 %
-% STEP4_BANDPOWER
-%   Band-specific power envelopes
+% STEP4A_BANDPOWER
+% Band-specific power envelopes
 %
 %
 % =========================================================================
@@ -139,7 +137,18 @@ step2_indir = ...
 if ~exist(step2_indir,'dir')
     error('STEP2 folder not found');
 end
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
+step4_outroot = ...
+    fullfile( ...
+    'D:\X-SONANCE\Dataset_MARCO',...
+    'STEP4A_BANDPOWER');
 
+if ~exist(step4_outroot,'dir')
+    mkdir(step4_outroot);
+end
+%% 2) LOAD FILES STEP2
 files = dir(fullfile(step2_indir,'*_epochData.mat'));
 
 if isempty(files)
@@ -173,6 +182,15 @@ for i = 1:nFiles
 
 end
 
+%% ============================================================
+% DATASET SUMMARY
+%% ============================================================
+
+num_trials = cellfun( ...
+    @(x) numel(x), ...
+    {subj_list.data_trials});
+
+total_trials = sum(num_trials);
 %% ============================================================
 % CONFIGURATION
 %% ============================================================
@@ -226,30 +244,118 @@ MAIN_ROI
 cfgBP.rois = ROI;
 
 cfgBP.analysis_rois = { ...
-    'Generic',...
-    'ERAN',...
-    'ERAN_RIGHT',...
     'ERAN_CORE',...
     'MMN',...
-    'N5'};
+    'FrontoCentral',...
+    'N5_CENTRAL'};
 
 % roiNames = fieldnames(cfgBP.rois);
 roiNames = cfgBP.analysis_rois;
 
 bandNames = fieldnames(cfgBP.bands);
 %% ============================================================
+% QUALITY CHECK
+%% ============================================================
+
+QC = struct();
+
+QC.nSubjects = numel(subj_list);
+
+QC.totalTrials = total_trials;
+
+QC.trialsPerSubject = num_trials;
+
+QC.comparisonName = comparisonName;
+
+QC.conditions = cfgBP.conditions;
+
+QC.baselineWindow = cfgBP.baseline_win;
+
+QC.normalization = cfgBP.normalization;
+
+QC.timeUnits = cfgBP.target_time_units;
+
+QC.roiNames = roiNames;
+
+QC.nROI = numel(roiNames);
+
+QC.bandDefinitions = cfgBP.bands;
+
+QC.bandNames = bandNames;
+
+QC.nBands = numel(bandNames);
+QC.conditionCounts = struct();
+
+for c = 1:numel(cfgBP.conditions)
+
+    condName = cfgBP.conditions{c};
+
+    nCond = 0;
+
+    for iSub = 1:numel(subj_list)
+
+        cond_values = ...
+            string({subj_list(iSub).data_trials.(cfgBP.cond_field)});
+
+        nCond = ...
+            nCond + ...
+            sum(strcmpi(cond_values,condName));
+
+    end
+
+    QC.conditionCounts.( ...
+        matlab.lang.makeValidName(condName)) = ...
+        nCond;
+
+end
+fprintf('\n');
+fprintf('================================\n');
+fprintf('BAND POWER CONFIGURATION\n');
+fprintf('================================\n');
+fprintf('Conditions :\n');
+
+for iCond = 1:numel(cfgBP.conditions)
+    fprintf('   %s\n', ...
+        cfgBP.conditions{iCond});
+end
+
+fprintf('Subjects   : %d\n', ...
+    QC.nSubjects);
+
+fprintf('Trials     : %d\n', ...
+    QC.totalTrials);
+
+fprintf('ROIs       : %d\n', ...
+    QC.nROI);
+
+fprintf('Bands      : %d\n', ...
+    QC.nBands);
+
+fprintf('Normalization : %s\n', ...
+    cfgBP.normalization);
+%% ============================================================
 % TOPOPLOT CONFIGURATION
 %% ============================================================
 cfgTopo = struct();
-cfgTopo.enable = true;
-cfgTopo.windows = { ...
-    [0.10 0.25] ...
-    [0.25 0.50] ...
-    [0.50 0.80]};
+cfgTopo.enable = false;
+cfgTopo.windows = {
+
+    [0.10 0.25]
+    [0.25 0.50]
+    [0.50 0.80]
+
+    [0.17 0.22]
+    [0.22 0.32]
+    [0.45 0.55]
+
+};
 cfgTopo.window_names = { ...
     '100_250ms' ...
     '250_500ms' ...
-    '500_800ms'};
+    '500_800ms',...
+    'EarlyNeg_170_220ms',...
+    'Rebound_220_320ms',...
+    'Late_450_550ms'};
 cfgTopo.conditions = { ...
     'Consonant',...
     'Dissonant',...
@@ -260,9 +366,9 @@ cfgTopo.colormap = turbo;
 % OUTPUT DIRECTORY
 %% ============================================================
 
-outdir = fullfile( ...
-    step2_indir,...
-    'BANDPOWER_STEP4',...
+outdir = ...
+    fullfile( ...
+    step4_outroot,...
     comparisonName);
 if ~exist(outdir,'dir')
     mkdir(outdir);
@@ -344,32 +450,27 @@ for iSub = 1:numel(subj_list)
         end
 
     end
-    for b = 1:numel(bandNames)
-
-        bandName = bandNames{b};
-        fprintf('   CHANNEL | %s OK\n', ...
-            bandName);
-        cfgCurr = cfgBP;
-
-        cfgCurr.band = ...
-            cfgBP.bands.(bandName);
-
-        bp_channel = ...
-            extract_channel_bandpower( ...
-            subj_curr,...
-            cfgCurr);
-
-        BandPower_Channel.(subjID) ...
-            .(bandName) = bp_channel;
-
-    end
+    % For Topoplot
+    % for b = 1:numel(bandNames)
+    %     bandName = bandNames{b};
+    %     fprintf('   CHANNEL | %s OK\n', ...
+    %         bandName);
+    %     cfgCurr = cfgBP;
+    %     cfgCurr.band = ...
+    %         cfgBP.bands.(bandName);
+    %     bp_channel = ...
+    %         extract_channel_bandpower( ...
+    %         subj_curr,...
+    %         cfgCurr);
+    %     BandPower_Channel.(subjID) ...
+    %         .(bandName) = bp_channel;
+    % end
 
 end
 
 %% ============================================================
 % GROUP LEVEL ANALYSIS
 %% ============================================================
-
 fprintf('\n');
 fprintf('================================\n');
 fprintf('GROUP LEVEL BAND POWER\n');
@@ -397,19 +498,19 @@ end
 % GROUP LEVEL CHANNEL ANALYSIS
 %% ============================================================
 
-fprintf('\n');
-fprintf('================================\n');
-fprintf('GROUP LEVEL CHANNEL BAND POWER\n');
-fprintf('================================\n');
-
-for b = 1:numel(bandNames)
-    bandName = bandNames{b};
-    fprintf('%s\n',bandName);
-    BandPower_Channel_Group.(bandName) = ...
-        average_group_channel_bandpower( ...
-        BandPower_Channel,...
-        bandName);
-end
+% fprintf('\n');
+% fprintf('================================\n');
+% fprintf('GROUP LEVEL CHANNEL BAND POWER\n');
+% fprintf('================================\n');
+% 
+% for b = 1:numel(bandNames)
+%     bandName = bandNames{b};
+%     fprintf('%s\n',bandName);
+%     BandPower_Channel_Group.(bandName) = ...
+%         average_group_channel_bandpower( ...
+%         BandPower_Channel,...
+%         bandName);
+% end
 %% ============================================================
 % PLOT
 %% ============================================================
@@ -451,20 +552,21 @@ end
 %% ============================================================
 % SAVE
 %% ============================================================
+close all
 
+set(0,'DefaultFigureVisible',origState);
 
 save( ...
     fullfile(outdir,...
-    'BandPower_STEP4.mat'),...
+    'BANDPOWER_STEP4A_RESULTS.mat'),...
     'BandPower_Subj',...
     'BandPower_Group',...
     'BandPower_Channel',...
     'BandPower_Channel_Group',...
+    'QC', ...
     'cfgBP',...
     'cfgTopo',...
     '-v7.3');
-
-set(0,'DefaultFigureVisible',origState);
 
 fprintf('\n');
 fprintf('================================\n');

@@ -240,17 +240,20 @@ end
 % ------------------------------------------------------------
 % Difference waveform
 % ------------------------------------------------------------
-
 condA = cfg.conditions{1};
 condB = cfg.conditions{2};
 
 if isfield(roi_bp,condA) && ...
-   isfield(roi_bp,condB)
+        isfield(roi_bp,condB)
 
     roi_bp.Difference.power = ...
         roi_bp.(condB).power - ...
         roi_bp.(condA).power;
 
+    roi_bp.Difference.sem = ...
+        sqrt( ...
+        roi_bp.(condA).sem.^2 + ...
+        roi_bp.(condB).sem.^2 );
 end
 
 end

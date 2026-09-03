@@ -70,9 +70,9 @@ end
 % 2. Pooled-trial ERP
 % 3. Group-average ERP
 % 4. LIMO input preparation
-comparisonNameList =  {'Consonance','Difference',...
-    'Goal','NoGoal','Control','All'};
-
+% comparisonNameList =  {'Consonance','Difference',...
+%     'Goal','NoGoal','Control','All'};
+comparisonNameList =  {'All'};
 for i=1:numel(comparisonNameList)
     try
         cfg = struct();
@@ -281,6 +281,20 @@ for i=1:numel(comparisonNameList)
                     ERP_subj.(subj_id).(roiName) = roi_erp;
                     % ERP PLOT
                     cfgPlot = struct();
+                    if strcmp(cfg.comparisonName,'All')
+                        cfgPlot.line_colors = [
+                            0.00 0.35 0.90 ;   % ConsonantGOAL
+                            0.85 0.20 0.20 ;   % DissonantGOAL
+                            0.10 0.60 0.25 ;   % ControlGOAL
+                            0.20 0.75 1.00 ;   % ConsonantNoGOAL
+                            1.00 0.55 0.00 ;   % DissonantNoGOAL
+                            0.60 0.20 0.80 ;   % ControlNoGOAL
+                            0.00 0.00 0.50 ;   % Consonant
+                            0.55 0.00 0.00     % Dissonant
+                            ];
+                        cfgPlot.patch_alpha = 0.08;
+                        cfgPlot.line_width_map = [2 2 2 2 2 2 2 2];
+                    end
                     cfgPlot.cond_idx  = 1:numel(cfg.conditions);
                     cfgPlot.show_zero = true;
                     cfgPlot.show_error = true;
@@ -355,6 +369,26 @@ for i=1:numel(comparisonNameList)
             ERP_Pooled.(roiName) = roi_erp;
             % ERP Pooled PLOT
             cfgPlot = struct();
+            if strcmp(cfg.comparisonName,'All')
+
+                cfgPlot.line_colors = [
+                    0.00 0.35 0.90 ;   % ConsonantGOAL
+                    0.85 0.20 0.20 ;   % DissonantGOAL
+                    0.10 0.60 0.25 ;   % ControlGOAL
+                    0.20 0.75 1.00 ;   % ConsonantNoGOAL
+                    1.00 0.55 0.00 ;   % DissonantNoGOAL
+                    0.60 0.20 0.80 ;   % ControlNoGOAL
+                    0.00 0.00 0.50 ;   % Consonant
+                    0.55 0.00 0.00     % Dissonant
+                    ];
+
+                cfgPlot.patch_alpha = 0.08;
+
+                cfgPlot.line_width_map = [
+                    2 2 2 2 2 2 2 2
+                    ];
+
+            end
             cfgPlot.cond_idx = 1:numel(cfg.conditions);
             cfgPlot.title_str = sprintf('Pooled-Trial ERP - %s', roiName);
             cfgPlot.show_zero = true;
@@ -383,6 +417,26 @@ for i=1:numel(comparisonNameList)
             ERP_Group.(roiName) = roi_erp;
             % ERP Group PLOT
             cfgPlot = struct();
+            if strcmp(cfg.comparisonName,'All')
+
+                cfgPlot.line_colors = [
+                    0.00 0.35 0.90 ;   % ConsonantGOAL
+                    0.85 0.20 0.20 ;   % DissonantGOAL
+                    0.10 0.60 0.25 ;   % ControlGOAL
+                    0.20 0.75 1.00 ;   % ConsonantNoGOAL
+                    1.00 0.55 0.00 ;   % DissonantNoGOAL
+                    0.60 0.20 0.80 ;   % ControlNoGOAL
+                    0.00 0.00 0.50 ;   % Consonant
+                    0.55 0.00 0.00     % Dissonant
+                    ];
+
+                cfgPlot.patch_alpha = 0.08;
+
+                cfgPlot.line_width_map = [
+                    2 2 2 2 2 2 2 2
+                    ];
+
+            end
             cfgPlot.cond_idx = 1:numel(cfg.conditions);
             cfgPlot.title_str = sprintf('Group ERP - %s', roiName);
             cfgPlot.show_zero = true;
@@ -419,6 +473,7 @@ for i=1:numel(comparisonNameList)
                 plot_limo_erp_comparison(limo_input.(roiName),cfgLimoPlot);
             end
         end
+        
         %% ============================================================
         % ERP TOPOPLOTS
         %% ============================================================
@@ -497,6 +552,7 @@ for i=1:numel(comparisonNameList)
 
             cfgTopo.analysis_win = ...
                 cfg.analysis_win;
+
             for c = 1:numel(cfg.conditions)
 
                 condName = cfg.conditions{c};
