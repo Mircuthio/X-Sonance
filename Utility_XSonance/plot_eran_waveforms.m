@@ -3,14 +3,18 @@ function plot_eran_waveforms( ...
     cfgERAN,...
     outdir)
 
-MAIN_ROI
-
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
 waveDir = fullfile(outdir,'Waveforms');
 
 if ~exist(waveDir,'dir')
     mkdir(waveDir);
 end
 
+%% ============================================================
+% LOOP ROIs
+%% ============================================================
 for r = 1:numel(cfgERAN.analysis_rois)
 
     roiName = cfgERAN.analysis_rois{r};
@@ -18,17 +22,40 @@ for r = 1:numel(cfgERAN.analysis_rois)
     roi_labels = ...
         cfgERAN.rois.(roiName);
 
-    ERP_CON = [];
-    ERP_DIS = [];
+    %% ========================================================
+    % PREALLOCATE SUBJECT MATRICES
+    %% ========================================================
+    nSub = numel(subj_list);
 
-    for iSub = 1:numel(subj_list)
+    timeVec = ...
+        subj_list(1).data_trials(1).time;
+
+    nTime = ...
+        numel(timeVec);
+
+    ERP_CON = zeros(nSub,nTime);
+    ERP_DIS = zeros(nSub,nTime);
+
+    %% ========================================================
+    % SUBJECT LOOP
+    %% ========================================================
+    for iSub = 1:nSub
 
         data_trials = ...
             subj_list(iSub).data_trials;
 
-        timeVec = ...
-            data_trials(1).time;
+        %% ----------------------------------------------------
+        % ROI INDEX (COMPUTED ONCE)
+        %% ----------------------------------------------------
+        labels = ...
+            {data_trials(1).chanlocs.labels};
 
+        roi_idx = ...
+            ismember(labels,roi_labels);
+
+        %% ----------------------------------------------------
+        % CONDITIONS
+        %% ----------------------------------------------------
         idxCon = strcmp( ...
             {data_trials.eventLabel}, ...
             'Consonant');
@@ -37,35 +64,52 @@ for r = 1:numel(cfgERAN.analysis_rois)
             {data_trials.eventLabel}, ...
             'Dissonant');
 
-        ERPcon_trials = [];
-        ERPdis_trials = [];
+        conTrials = find(idxCon);
+        disTrials = find(idxDis);
 
-        for it = find(idxCon)
+        nCon = numel(conTrials);
+        nDis = numel(disTrials);
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
+        %% ----------------------------------------------------
+        % PREALLOCATE TRIAL MATRICES
+        %% ----------------------------------------------------
+        ERPcon_trials = ...
+            zeros(nCon,nTime);
 
-            roi_idx = ...
-                ismember(labels,roi_labels);
+        ERPdis_trials = ...
+            zeros(nDis,nTime);
 
-            ERPcon_trials(end+1,:) = ...
-                mean(data_trials(it).eeg(roi_idx,:),1);
+        %% ----------------------------------------------------
+        % CONSONANT
+        %% ----------------------------------------------------
+        for k = 1:nCon
+
+            it = conTrials(k);
+
+            ERPcon_trials(k,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:), ...
+                1);
 
         end
 
-        for it = find(idxDis)
+        %% ----------------------------------------------------
+        % DISSONANT
+        %% ----------------------------------------------------
+        for k = 1:nDis
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
+            it = disTrials(k);
 
-            roi_idx = ...
-                ismember(labels,roi_labels);
-
-            ERPdis_trials(end+1,:) = ...
-                mean(data_trials(it).eeg(roi_idx,:),1);
+            ERPdis_trials(k,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:), ...
+                1);
 
         end
 
+        %% ----------------------------------------------------
+        % SUBJECT AVERAGES
+        %% ----------------------------------------------------
         ERP_CON(iSub,:) = ...
             mean(ERPcon_trials,1);
 
@@ -74,42 +118,70 @@ for r = 1:numel(cfgERAN.analysis_rois)
 
     end
 
+    %% ========================================================
+    % GROUP AVERAGES
+    %% ========================================================
     ERPcon = mean(ERP_CON,1);
+
     ERPdis = mean(ERP_DIS,1);
 
     ERPdiff = ERPdis - ERPcon;
-    
-    winLabels = cell(1,numel(cfgERAN.windows));
 
-    for iw = 1:numel(cfgERAN.windows)
+    %% ========================================================
+    % WINDOW LABELS
+    %% ========================================================
+    nWindows = ...
+        numel(cfgERAN.windows);
 
-        win = cfgERAN.windows{iw};
+    winLabels = ...
+        cell(1,nWindows);
 
-        winLabels{iw} = sprintf( ...
+    for iw = 1:nWindows
+
+        win = ...
+            cfgERAN.windows{iw};
+
+        winLabels{iw} = ...
+            sprintf( ...
             '%s (%d-%d ms)',...
-            cfgERAN.window_names{iw},...
+            format_tex_name(cfgERAN.window_names{iw}),...
             round(win(1)*1000),...
             round(win(2)*1000));
 
     end
 
+    %% ========================================================
+    % FIGURE
+    %% ========================================================
     figure( ...
         'Color','w',...
         'Position',[100 100 1300 600]);
 
     hold on
 
+    %% ========================================================
+    % Y LIMITS
+    %% ========================================================
     yL = [ ...
-    min([ERPcon ERPdis ERPdiff]) ...
-    max([ERPcon ERPdis ERPdiff])];
+        min([ERPcon ERPdis ERPdiff]) ...
+        max([ERPcon ERPdis ERPdiff])];
 
-    colors = lines(3);
+    %% ========================================================
+    % WINDOW PATCHES
+    %% ========================================================
+    colors = ...
+        lines(nWindows);
 
-    for iw = 1:numel(cfgERAN.windows)
+    patchHandles = ...
+        gobjects(nWindows,1);
 
-        win = cfgERAN.windows{iw};
+    for iw = 1:nWindows
 
-        patch( ...
+        win = ...
+            cfgERAN.windows{iw};
+
+        patchHandles(iw) = ...
+            patch( ...
             [win(1) win(2) win(2) win(1)],...
             [yL(1) yL(1) yL(2) yL(2)],...
             colors(iw,:),...
@@ -118,39 +190,68 @@ for r = 1:numel(cfgERAN.analysis_rois)
 
     end
 
-    plot(timeVec,ERPcon,...
+    %% ========================================================
+    % ERP CURVES
+    %% ========================================================
+    hCon = plot( ...
+        timeVec,...
+        ERPcon,...
         'LineWidth',2);
 
-    plot(timeVec,ERPdis,...
+    hDis = plot( ...
+        timeVec,...
+        ERPdis,...
         'LineWidth',2);
 
-    plot(timeVec,ERPdiff,...
+    hDiff = plot( ...
+        timeVec,...
+        ERPdiff,...
         'k',...
         'LineWidth',2);
 
-    yline(0,'k:')
-    xline(0,'k:')
+    %% ========================================================
+    % REFERENCE LINES
+    %% ========================================================
+    yline(0,'k:');
 
+    xline(0,'k:');
+
+    %% ========================================================
+    % AXES
+    %% ========================================================
     xlim([-0.2 0.8])
 
     xlabel('Time (s)')
+
     ylabel('\muV')
 
     title(sprintf( ...
         '%s ERP', ...
-        roiName));
+        format_tex_name(roiName)));
+
+    %% ========================================================
+    % LEGEND
+    %% ========================================================
+    legendHandles = [ ...
+        patchHandles(:)' ...
+        hCon ...
+        hDis ...
+        hDiff];
 
     legendLabels = [ ...
-        winLabels,...
+        winLabels ...
         {'Consonant',...
-        'Dissonant',...
-        'Difference',...
-        'Peak ERAN'}];
+         'Dissonant',...
+         'Difference'}];
 
     legend( ...
+        legendHandles,...
         legendLabels,...
         'Location','best');
 
+    %% ========================================================
+    % SAVE
+    %% ========================================================
     exportgraphics( ...
         gcf,...
         fullfile( ...
@@ -159,5 +260,7 @@ for r = 1:numel(cfgERAN.analysis_rois)
         'Resolution',300);
 
     close
+
+end
 
 end

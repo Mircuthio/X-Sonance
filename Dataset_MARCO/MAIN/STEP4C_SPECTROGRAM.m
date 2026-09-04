@@ -45,6 +45,12 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
 %% ============================================================
 % LOAD DATA
 %% ============================================================
@@ -106,12 +112,9 @@ cfgTFERP.analysis_window = ...
 %% ------------------------------------------------------------
 % SPECTROGRAM
 %% ------------------------------------------------------------
-
-cfgTFERP.window_length = 32;
-
-cfgTFERP.overlap = 16;
-
-cfgTFERP.nfft = 64;
+cfgTFERP.window_length = 256;
+cfgTFERP.overlap = 240;
+cfgTFERP.nfft = 512;
 
 cfgTFERP.fmin = 1;
 
@@ -249,16 +252,62 @@ end
 assert( ...
     ~isempty(fieldnames(TFERP_Group)),...
     'Empty TFERP_Group');
+disp(fieldnames(TFERP_Group.(roiNames{1})))
+%% ============================================================
+% GLOBAL COLOR LIMITS
+%% ============================================================
 
+allSpec = [];
+allDiff = [];
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    allSpec = [ ...
+        allSpec ; ...
+        TFERP_Group.(roiName).Consonant.power(:) ; ...
+        TFERP_Group.(roiName).Dissonant.power(:)];
+
+    allDiff = [ ...
+        allDiff ; ...
+        TFERP_Group.(roiName).Difference.power(:)];
+
+end
+
+GLOBAL_SPEC_MIN = prctile(allSpec,2);
+GLOBAL_SPEC_MAX = prctile(allSpec,98);
+
+GLOBAL_DIFF_MAX = ...
+    prctile(abs(allDiff),98);
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('GLOBAL COLOR LIMITS\n');
+fprintf('================================\n');
+
+fprintf('GLOBAL_SPEC_MIN  : %.3f\n', ...
+    GLOBAL_SPEC_MIN);
+
+fprintf('GLOBAL_SPEC_MAX  : %.3f\n', ...
+    GLOBAL_SPEC_MAX);
+
+fprintf('GLOBAL_DIFF_MAX : %.3f\n', ...
+    GLOBAL_DIFF_MAX);
+fprintf('================================\n');
 %% ============================================================
 % PLOT CONFIGURATION
 %% ============================================================
 
 cfgPlot = struct();
 
-cfgPlot.colormap = turbo;
+cfgPlot.colormap = parula;
 
-cfgPlot.clim = 'auto';
+cfgPlot.SpecLimits = ...
+    [GLOBAL_SPEC_MIN GLOBAL_SPEC_MAX];
+
+cfgPlot.DiffLimits = ...
+    [-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX];
 
 cfgPlot.showDifference = true;
 
@@ -359,13 +408,26 @@ if cfgPlot.save_difference_only
 
         plot_erp_spectrogram_difference( ...
             TFERP_Group.(roiName),...
-            sprintf('%s Difference',roiName),...
+            sprintf('%s Difference',format_tex_name(roiName)),...
             cfgPlot);
 
     end
 
 end
+%% ============================================================
+% COLOR LIMITS
+%% ============================================================
 
+ColorLimits = struct();
+
+ColorLimits.GLOBAL_SPEC_MIN = ...
+    GLOBAL_SPEC_MIN;
+
+ColorLimits.GLOBAL_SPEC_MAX = ...
+    GLOBAL_SPEC_MAX;
+
+ColorLimits.GLOBAL_DIFF_MAX = ...
+    GLOBAL_DIFF_MAX;
 %% ============================================================
 % SAVE RESULTS
 %% ============================================================
@@ -376,6 +438,7 @@ save( ...
     'STEP4C_SPECTROGRAM_RESULTS.mat'),...
     'TFERP_Subj',...
     'TFERP_Group',...
+    'ColorLimits',...
     'cfgTFERP',...
     '-v7.3');
 

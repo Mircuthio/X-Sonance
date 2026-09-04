@@ -284,17 +284,13 @@ set(0,'DefaultFigureVisible','off');
 
 addpath(genpath('D:\eeglab2026.0.0\'))
 
-%% ============================================================
-% OUTPUT DIRECTORY
-%% ============================================================
-step4_outroot = ...
-    fullfile( ...
-    'D:\X-SONANCE\Dataset_MARCO',...
-    'STEP4B_TFR_MORLET_REPLICA_PARK');
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
 
-if ~exist(step4_outroot,'dir')
-    mkdir(step4_outroot);
-end
 %% ============================================================
 % OUTPUT DIRECTORY
 %% ============================================================
@@ -306,6 +302,14 @@ step4_outroot = ...
 if ~exist(step4_outroot,'dir')
     mkdir(step4_outroot);
 end
+%% ============================================================
+% LOAD DATA
+%% ============================================================
+step2_indir = ...
+    'D:\X-SONANCE\Dataset_MARCO\';
+
+load(fullfile(step2_indir,'subj_list.mat'));
+
 % Time check
 time0 = subj_list(1).data_trials(1).time;
 
@@ -516,6 +520,48 @@ for r = 1:numel(roiNames)
         roiName);
 
 end
+%% ============================================================
+% GLOBAL COLOR LIMITS
+%% ============================================================
+
+allPower = [];
+allDiff  = [];
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    allPower = [ ...
+        allPower ;
+        TFR_Group.(roiName).Consonant.power(:) ;
+        TFR_Group.(roiName).Dissonant.power(:)];
+
+    allDiff = [ ...
+        allDiff ;
+        TFR_Group.(roiName).Difference.power(:)];
+
+end
+
+GLOBAL_TFR_MIN = prctile(allPower,2);
+GLOBAL_TFR_MAX = prctile(allPower,98);
+
+GLOBAL_DIFF_MAX = ...
+    prctile(abs(allDiff),98);
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('GLOBAL COLOR LIMITS\n');
+fprintf('=====================================\n');
+fprintf('TFR  : [%.3f %.3f]\n', ...
+    GLOBAL_TFR_MIN,...
+    GLOBAL_TFR_MAX);
+
+fprintf('DIFF : +/- %.3f\n', ...
+    GLOBAL_DIFF_MAX);
+fprintf('=====================================\n');
+%% ============================================================
+% PLOTS
+%% ============================================================
 for r=1:numel(roiNames)
     roiName = roiNames{r};
     groupData = ...
@@ -554,8 +600,9 @@ for r=1:numel(roiNames)
 
     axis xy
     colorbar
+        clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
-    title(sprintf('%s - Consonant',roiName))
+    title(sprintf('%s - Consonant',format_tex_name(roiName)))
 
     subplot(3,1,2)
 
@@ -566,8 +613,9 @@ for r=1:numel(roiNames)
 
     axis xy
     colorbar
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
-    title(sprintf('%s - Dissonant',roiName))
+    title(sprintf('%s - Dissonant',format_tex_name(roiName)))
 
     subplot(3,1,3)
 
@@ -575,14 +623,12 @@ for r=1:numel(roiNames)
         groupData.time,...
         groupData.freq,...
         diffMap)
-    mx = max(abs(diffMap(:)));
-    if mx > 0
-        clim([-mx mx]);
-    end
+
     axis xy
     colorbar
+        clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
 
-    title(sprintf('%s - Difference',roiName))
+    title(sprintf('%s - Difference',format_tex_name(roiName)))
     saveas( ...
         gcf,...
         fullfile( ...
@@ -624,7 +670,7 @@ for r=1:numel(roiNames)
         'Difference');
     xlabel('Time (s)')
     ylabel('Power (dB)')
-    title(sprintf('Gamma Time Course - %s',roiName))
+    title(sprintf('Gamma Time Course - %s',format_tex_name(roiName)))
     saveas( ...
         gcf,...
         fullfile( ...

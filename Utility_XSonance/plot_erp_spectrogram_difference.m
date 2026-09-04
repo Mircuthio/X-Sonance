@@ -13,7 +13,7 @@ if nargin < 3
 end
 
 if ~isfield(cfg,'colormap')
-    cfg.colormap = turbo;
+    cfg.colormap = parula;
 end
 
 if ~isfield(cfg,'clim')
@@ -57,15 +57,14 @@ yticks(0:10:freqMaxDisplay)
 
 xlabel('Time (s)')
 ylabel('Frequency (Hz)')
-title(titleStr,...
-    'Interpreter','none')
+title(format_tex_name(titleStr))
 
 colormap(cfg.colormap)
 
 colorbar
 
-if ~isequal(cfg.clim,'auto')
-    clim(cfg.clim)
+if isfield(cfg,'DiffLimits')
+    clim(cfg.DiffLimits)
 end
 %% ============================================================
 % SAVE

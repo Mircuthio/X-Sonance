@@ -112,15 +112,14 @@ for iCond = 1:nCond
     xlabel('Time (s)')
     ylabel('Frequency (Hz)')
 
-    title(condName,...
-        'Interpreter','none')
+    title(format_tex_name(condName))
 
     colormap(cfg.colormap)
 
     colorbar
 
-    if ~isequal(cfg.clim,'auto')
-        clim(cfg.clim)
+    if isfield(cfg,'SpecLimits')
+        clim(cfg.SpecLimits)
     end
 
     panelIdx = ...
@@ -153,16 +152,16 @@ if cfg.showDifference && ...
     xlabel('Time (s)')
     ylabel('Frequency (Hz)')
 
-    title(groupTF.Difference.label,...
-        'Interpreter','none')
+    title(format_tex_name(groupTF.Difference.label))
 
     colormap(cfg.colormap)
 
     colorbar
 
-    if ~isequal(cfg.clim,'auto')
-        clim(cfg.clim)
+    if isfield(cfg,'DiffLimits')
+        clim(cfg.DiffLimits)
     end
+
 
 end
 
@@ -172,7 +171,7 @@ end
 
 sgtitle( ...
     sprintf('ERP Spectrogram - %s', ...
-    roiName),...
+    format_tex_name(roiName)),...
     'FontWeight','bold');
 
 %% ============================================================

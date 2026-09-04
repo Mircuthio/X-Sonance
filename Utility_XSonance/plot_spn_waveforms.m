@@ -3,6 +3,9 @@ function plot_spn_waveforms( ...
     cfgSPN,...
     outdir)
 
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
 waveDir = ...
     fullfile(outdir,'Waveforms');
 
@@ -10,6 +13,9 @@ if ~exist(waveDir,'dir')
     mkdir(waveDir);
 end
 
+%% ============================================================
+% LOOP ROIs
+%% ============================================================
 for r = 1:numel(cfgSPN.analysis_rois)
 
     roiName = ...
@@ -18,21 +24,41 @@ for r = 1:numel(cfgSPN.analysis_rois)
     roi_labels = ...
         cfgSPN.rois.(roiName);
 
-    ERP_CON = [];
-    ERP_DIS = [];
+    %% ========================================================
+    % PREALLOCATE SUBJECT MATRICES
+    %% ========================================================
+    nSub = ...
+        numel(subj_list_spn);
+
+    timeVec = ...
+        subj_list_spn(1).data_trials(1).time;
+
+    nTime = ...
+        numel(timeVec);
+
+    ERP_CON = nan(nSub,nTime);
+    ERP_DIS = nan(nSub,nTime);
 
     %% ========================================================
-    % SUBJECTS
+    % SUBJECT LOOP
     %% ========================================================
-
-    for iSub = 1:numel(subj_list_spn)
+    for iSub = 1:nSub
 
         data_trials = ...
             subj_list_spn(iSub).data_trials;
 
-        timeVec = ...
-            data_trials(1).time;
+        %% ----------------------------------------------------
+        % ROI INDEX (ONCE)
+        %% ----------------------------------------------------
+        labels = ...
+            {data_trials(1).chanlocs.labels};
 
+        roi_idx = ...
+            ismember(labels,roi_labels);
+
+        %% ----------------------------------------------------
+        % CONDITIONS
+        %% ----------------------------------------------------
         idxCon = strcmp( ...
             {data_trials.eventLabel}, ...
             'Consonant');
@@ -41,43 +67,49 @@ for r = 1:numel(cfgSPN.analysis_rois)
             {data_trials.eventLabel}, ...
             'Dissonant');
 
-        ERPcon_trials = [];
-        ERPdis_trials = [];
+        conTrials = find(idxCon);
+        disTrials = find(idxDis);
 
-        %% Consonant
+        nCon = numel(conTrials);
+        nDis = numel(disTrials);
 
-        for it = find(idxCon)
+        ERPcon_trials = ...
+            zeros(nCon,nTime);
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
+        ERPdis_trials = ...
+            zeros(nDis,nTime);
 
-            roi_idx = ...
-                ismember(labels,roi_labels);
+        %% ----------------------------------------------------
+        % CONSONANT
+        %% ----------------------------------------------------
+        for k = 1:nCon
 
-            ERPcon_trials(end+1,:) = ...
+            it = conTrials(k);
+
+            ERPcon_trials(k,:) = ...
                 mean( ...
-                data_trials(it).eeg(roi_idx,:),...
+                data_trials(it).eeg(roi_idx,:), ...
                 1);
 
         end
 
-        %% Dissonant
+        %% ----------------------------------------------------
+        % DISSONANT
+        %% ----------------------------------------------------
+        for k = 1:nDis
 
-        for it = find(idxDis)
+            it = disTrials(k);
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
-
-            roi_idx = ...
-                ismember(labels,roi_labels);
-
-            ERPdis_trials(end+1,:) = ...
+            ERPdis_trials(k,:) = ...
                 mean( ...
-                data_trials(it).eeg(roi_idx,:),...
+                data_trials(it).eeg(roi_idx,:), ...
                 1);
 
         end
 
+        %% ----------------------------------------------------
+        % SUBJECT AVERAGES
+        %% ----------------------------------------------------
         ERP_CON(iSub,:) = ...
             mean(ERPcon_trials,1);
 
@@ -89,17 +121,41 @@ for r = 1:numel(cfgSPN.analysis_rois)
     %% ========================================================
     % GROUP ERP
     %% ========================================================
+    ERPcon = ...
+        mean(ERP_CON,1,'omitnan');
 
-    ERPcon = mean(ERP_CON,1);
+    ERPdis = ...
+        mean(ERP_DIS,1,'omitnan');
 
-    ERPdis = mean(ERP_DIS,1);
+    ERPdiff = ...
+        ERPdis - ERPcon;
 
-    ERPdiff = ERPdis - ERPcon;
+    %% ========================================================
+    % WINDOW LABELS
+    %% ========================================================
+    nWindows = ...
+        numel(cfgSPN.windows);
+
+    winLabels = ...
+        cell(1,nWindows);
+
+    for iw = 1:nWindows
+
+        win = ...
+            cfgSPN.windows{iw};
+
+        winLabels{iw} = ...
+            sprintf( ...
+            '%s (%d-%d ms)', ...
+            format_tex_name(cfgSPN.window_names{iw}),...
+            round(win(1)*1000),...
+            round(win(2)*1000));
+
+    end
 
     %% ========================================================
     % FIGURE
     %% ========================================================
-
     figure( ...
         'Color','w',...
         'Position',[100 100 1300 600]);
@@ -110,17 +166,22 @@ for r = 1:numel(cfgSPN.analysis_rois)
         min([ERPcon ERPdis ERPdiff]) ...
         max([ERPcon ERPdis ERPdiff])];
 
-    colors = lines(numel(cfgSPN.windows));
-
     %% ========================================================
-    % WINDOWS
+    % WINDOW PATCHES
     %% ========================================================
+    colors = ...
+        lines(nWindows);
 
-    for iw = 1:numel(cfgSPN.windows)
+    patchHandles = ...
+        gobjects(nWindows,1);
 
-        win = cfgSPN.windows{iw};
+    for iw = 1:nWindows
 
-        patch( ...
+        win = ...
+            cfgSPN.windows{iw};
+
+        patchHandles(iw) = ...
+            patch( ...
             [win(1) win(2) win(2) win(1)],...
             [yL(1) yL(1) yL(2) yL(2)],...
             colors(iw,:),...
@@ -130,73 +191,69 @@ for r = 1:numel(cfgSPN.analysis_rois)
     end
 
     %% ========================================================
-    % ERP
+    % ERP CURVES
     %% ========================================================
-
-    plot( ...
+    hCon = plot( ...
         timeVec,...
         ERPcon,...
         'LineWidth',2);
 
-    plot( ...
+    hDis = plot( ...
         timeVec,...
         ERPdis,...
         'LineWidth',2);
 
-    plot( ...
+    hDiff = plot( ...
         timeVec,...
         ERPdiff,...
         'k',...
         'LineWidth',2);
 
-    yline(0,'k:')
+    %% ========================================================
+    % REFERENCE LINES
+    %% ========================================================
+    yline(0,'k:');
 
-    xline(0,'r:')
+    xline(0,'r:');
 
+    %% ========================================================
+    % AXES
+    %% ========================================================
     xlim([ ...
         -cfgSPN.preStim ...
-         cfgSPN.postStim])
+         cfgSPN.postStim]);
 
-    xlabel('Time (s)')
-    ylabel('\muV')
+    xlabel('Time (s)');
+
+    ylabel('\muV');
 
     title(sprintf( ...
         '%s SPN Waveform', ...
-        roiName));
+        format_tex_name(roiName)));
 
     %% ========================================================
     % LEGEND
     %% ========================================================
-
-    winLabels = ...
-        cell(1,numel(cfgSPN.windows));
-
-    for iw = 1:numel(cfgSPN.windows)
-
-        win = cfgSPN.windows{iw};
-
-        winLabels{iw} = sprintf( ...
-            '%s (%d-%d ms)', ...
-            cfgSPN.window_names{iw},...
-            round(win(1)*1000),...
-            round(win(2)*1000));
-
-    end
+    legendHandles = [ ...
+        patchHandles(:)' ...
+        hCon ...
+        hDis ...
+        hDiff];
 
     legendLabels = [ ...
-        winLabels,...
+        winLabels ...
         {'Consonant',...
          'Dissonant',...
          'Difference'}];
 
     legend( ...
+        legendHandles,...
         legendLabels,...
         'Location','best');
 
     %% ========================================================
     % SAVE
     %% ========================================================
-
     exportgraphics( ...
         gcf,...
         fullfile( ...

@@ -17,8 +17,12 @@ if ~isfield(cfg,'colormap')
     cfg.colormap = turbo;
 end
 
-if ~isfield(cfg,'clim')
-    cfg.clim = 'auto';
+if ~isfield(cfg,'SpecLimits')
+    cfg.SpecLimits = [];
+end
+
+if ~isfield(cfg,'DiffLimits')
+    cfg.DiffLimits = [];
 end
 
 if ~isfield(cfg,'showDifference')
@@ -95,13 +99,13 @@ for iCond = 1:nCond
     colorbar
     colormap(cfg.colormap)
 
-    if ~isequal(cfg.clim,'auto')
-        clim(cfg.clim)
+    if ~isempty(cfg.SpecLimits)
+        clim(cfg.SpecLimits)
     end
 
     xlabel('Time (s)')
     ylabel('Frequency (Hz)')
-    title(condName,'Interpreter','none')
+    title(format_tex_name(condName))
 
     panelIdx = panelIdx + 1;
 
@@ -134,21 +138,20 @@ if cfg.showDifference && ...
     colorbar
     colormap(cfg.colormap)
 
-    if ~isequal(cfg.clim,'auto')
-        clim(cfg.clim)
+    if ~isempty(cfg.DiffLimits)
+        clim(cfg.DiffLimits)
     end
 
     xlabel('Time (s)')
     ylabel('Frequency (Hz)')
-    title(subjTF.Difference.label,...
-        'Interpreter','none')
+    title(format_tex_name(subjTF.Difference.label))
 
 end
 
 sgtitle(sprintf( ...
     '%s | %s', ...
-    subjID,...
-    roiName));
+    format_tex_name(subjID),...
+    format_tex_name(roiName)));
 %% ============================================================
 % SAVE
 %% ============================================================

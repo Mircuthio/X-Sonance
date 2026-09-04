@@ -9,11 +9,7 @@ if ~exist(cmpDir,'dir')
     mkdir(cmpDir);
 end
 
-roiCompare = { ...
-    'ERAN_CORE',...
-    'MMN',...
-    'aMMN',...
-    'afMMN'};
+roiCompare = cfgMMN.analysis_rois;
 
 colors = lines(numel(roiCompare));
 
@@ -125,7 +121,7 @@ for r = 1:numel(roiCompare)
 
     xlim([0 0.30])
 
-    title(roiName)
+    title(format_tex_name(roiName))
 
     xlabel('Time (s)')
     ylabel('\muV')

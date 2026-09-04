@@ -3,12 +3,18 @@ function plot_mmn_zoom( ...
     cfgMMN,...
     outdir)
 
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
 zoomDir = fullfile(outdir,'Zoom');
 
 if ~exist(zoomDir,'dir')
     mkdir(zoomDir);
 end
 
+%% ============================================================
+% LOOP ROIs
+%% ============================================================
 for r = 1:numel(cfgMMN.analysis_rois)
 
     roiName = cfgMMN.analysis_rois{r};
@@ -16,16 +22,32 @@ for r = 1:numel(cfgMMN.analysis_rois)
     roi_labels = ...
         cfgMMN.rois.(roiName);
 
-    ERP_CON = [];
-    ERP_DIS = [];
+    %% ========================================================
+    % PREALLOCATE SUBJECT MATRICES
+    %% ========================================================
+    nSub = numel(subj_list);
 
-    for iSub = 1:numel(subj_list)
+    timeVec = ...
+        subj_list(1).data_trials(1).time;
+
+    nTime = numel(timeVec);
+
+    ERP_CON = nan(nSub,nTime);
+    ERP_DIS = nan(nSub,nTime);
+
+    %% ========================================================
+    % SUBJECT LOOP
+    %% ========================================================
+    for iSub = 1:nSub
 
         data_trials = ...
             subj_list(iSub).data_trials;
 
-        timeVec = ...
-            data_trials(1).time;
+        labels = ...
+            {data_trials(1).chanlocs.labels};
+
+        roi_idx = ...
+            ismember(labels,roi_labels);
 
         idxCon = strcmp( ...
             {data_trials.eventLabel}, ...
@@ -35,32 +57,43 @@ for r = 1:numel(cfgMMN.analysis_rois)
             {data_trials.eventLabel}, ...
             'Dissonant');
 
-        ERPcon_trials = [];
-        ERPdis_trials = [];
+        conTrials = find(idxCon);
+        disTrials = find(idxDis);
 
-        for it = find(idxCon)
+        nCon = numel(conTrials);
+        nDis = numel(disTrials);
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
+        ERPcon_trials = ...
+            zeros(nCon,nTime);
 
-            roi_idx = ...
-                ismember(labels,roi_labels);
+        ERPdis_trials = ...
+            zeros(nDis,nTime);
 
-            ERPcon_trials(end+1,:) = ...
-                mean(data_trials(it).eeg(roi_idx,:),1);
+        %% ----------------------------------------------------
+        % CONSONANT
+        %% ----------------------------------------------------
+        for k = 1:nCon
+
+            it = conTrials(k);
+
+            ERPcon_trials(k,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:), ...
+                1);
 
         end
 
-        for it = find(idxDis)
+        %% ----------------------------------------------------
+        % DISSONANT
+        %% ----------------------------------------------------
+        for k = 1:nDis
 
-            labels = ...
-                {data_trials(it).chanlocs.labels};
+            it = disTrials(k);
 
-            roi_idx = ...
-                ismember(labels,roi_labels);
-
-            ERPdis_trials(end+1,:) = ...
-                mean(data_trials(it).eeg(roi_idx,:),1);
+            ERPdis_trials(k,:) = ...
+                mean( ...
+                data_trials(it).eeg(roi_idx,:), ...
+                1);
 
         end
 
@@ -72,19 +105,27 @@ for r = 1:numel(cfgMMN.analysis_rois)
 
     end
 
-    ERPcon = mean(ERP_CON,1);
+    %% ========================================================
+    % GROUP ERP
+    %% ========================================================
+    ERPcon = ...
+        mean(ERP_CON,1,'omitnan');
 
-    ERPdis = mean(ERP_DIS,1);
+    ERPdis = ...
+        mean(ERP_DIS,1,'omitnan');
 
-    ERPdiff = ERPdis - ERPcon;
+    ERPdiff = ...
+        ERPdis - ERPcon;
 
     %% ========================================================
-    % PEAK DIFFERENCE (MMN_FULL)
+    % PEAK DIFFERENCE (LAST WINDOW)
     %% ========================================================
+    peakWindow = ...
+        cfgMMN.windows{end};
 
     idxPeakWin = ...
-        timeVec >= cfgN5.windows{end}(1) & ...
-        timeVec <= cfgN5.windows{end}(2);
+        timeVec >= peakWindow(1) & ...
+        timeVec <= peakWindow(2);
 
     diffWin = ERPdiff(idxPeakWin);
 
@@ -97,21 +138,30 @@ for r = 1:numel(cfgMMN.analysis_rois)
         timeWin(idxPeak);
 
     %% ========================================================
-    % FIGURE
+    % WINDOW LABELS
     %% ========================================================
-    winLabels = cell(1,numel(cfgMMN.windows));
+    nWindows = ...
+        numel(cfgMMN.windows);
 
-    for iw = 1:numel(cfgMMN.windows)
+    winLabels = ...
+        cell(1,nWindows);
+
+    for iw = 1:nWindows
 
         win = cfgMMN.windows{iw};
 
-        winLabels{iw} = sprintf( ...
+        winLabels{iw} = ...
+            sprintf( ...
             '%s (%d-%d ms)',...
-            cfgMMN.window_names{iw},...
+            format_tex_name(cfgMMN.window_names{iw}),...
             round(win(1)*1000),...
             round(win(2)*1000));
 
     end
+
+    %% ========================================================
+    % FIGURE
+    %% ========================================================
     figure( ...
         'Color','w',...
         'Position',[100 100 1200 600]);
@@ -122,13 +172,20 @@ for r = 1:numel(cfgMMN.analysis_rois)
         min([ERPcon ERPdis ERPdiff]) ...
         max([ERPcon ERPdis ERPdiff])];
 
-    colors = lines(3);
+    %% ========================================================
+    % WINDOWS
+    %% ========================================================
+    colors = lines(nWindows);
 
-    for iw = 1:numel(cfgMMN.windows)
+    patchHandles = ...
+        gobjects(nWindows,1);
+
+    for iw = 1:nWindows
 
         win = cfgMMN.windows{iw};
 
-        patch( ...
+        patchHandles(iw) = ...
+            patch( ...
             [win(1) win(2) win(2) win(1)],...
             [yL(1) yL(1) yL(2) yL(2)],...
             colors(iw,:),...
@@ -137,26 +194,26 @@ for r = 1:numel(cfgMMN.analysis_rois)
 
     end
 
-    plot( ...
-        timeVec,...
-        ERPcon,...
-        'LineWidth',2);
+    %% ========================================================
+    % ERP
+    %% ========================================================
+    hCon = plot(timeVec,ERPcon,'LineWidth',2);
 
-    plot( ...
-        timeVec,...
-        ERPdis,...
-        'LineWidth',2);
+    hDis = plot(timeVec,ERPdis,'LineWidth',2);
 
-    plot( ...
+    hDiff = plot( ...
         timeVec,...
         ERPdiff,...
         'k',...
         'LineWidth',2);
 
-    plot( ...
+    %% ========================================================
+    % PEAK
+    %% ========================================================
+    hPeak = plot( ...
         peakLat,...
         peakAmp,...
-        'rv',...
+        'rp',...
         'MarkerFaceColor','r',...
         'MarkerSize',8);
 
@@ -165,31 +222,53 @@ for r = 1:numel(cfgMMN.analysis_rois)
         'r--',...
         'LineWidth',1.5);
 
-    yline(0,'k:')
-    xline(0,'k:')
+    %% ========================================================
+    % REFERENCE
+    %% ========================================================
+    yline(0,'k:');
 
+    xline(0,'k:');
+
+    %% ========================================================
+    % AXES
+    %% ========================================================
     xlim(cfgMMN.zoom_window)
 
     xlabel('Time (s)')
+
     ylabel('\muV')
 
     title(sprintf( ...
-        '%s MMN Zoom\nPeak MMN = %.0f ms | %.2f µV', ...
-        roiName,...
+        '%s MMN Zoom\nPeak MMN = %.0f ms | %.2f \\muV', ...
+        format_tex_name(roiName),...
         peakLat*1000,...
         peakAmp));
+
+    %% ========================================================
+    % LEGEND
+    %% ========================================================
+    legendHandles = [ ...
+        patchHandles(:)' ...
+        hCon ...
+        hDis ...
+        hDiff ...
+        hPeak];
 
     legendLabels = [ ...
         winLabels,...
         {'Consonant',...
-        'Dissonant',...
-        'Difference',...
-        'Peak MMN'}];
+         'Dissonant',...
+         'Difference',...
+         'Peak MMN'}];
 
     legend( ...
+        legendHandles,...
         legendLabels,...
         'Location','best');
-    
+
+    %% ========================================================
+    % SAVE
+    %% ========================================================
     exportgraphics( ...
         gcf,...
         fullfile( ...
@@ -199,5 +278,7 @@ for r = 1:numel(cfgMMN.analysis_rois)
         'Resolution',300);
 
     close
+
+end
 
 end

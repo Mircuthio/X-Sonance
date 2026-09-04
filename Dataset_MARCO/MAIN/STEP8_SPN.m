@@ -10,20 +10,29 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
 %% ============================================================
-% PATHS
+% LOAD DATA
 %% ============================================================
 
-inputFolder = ...
-'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EXTRACTED_DATA';
+step2_indir = ...
+'D:\X-SONANCE\Dataset_MARCO';
 
-outdir = ...
-'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\STEP8_SPN';
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
+step8_outroot = ...
+    fullfile( ...
+    'D:\X-SONANCE\Dataset_MARCO');
 
-if ~exist(outdir,'dir')
-    mkdir(outdir);
+if ~exist(step8_outroot,'dir')
+    mkdir(step8_outroot);
 end
-
 %% ============================================================
 % CONFIGURATION
 %% ============================================================
@@ -46,14 +55,18 @@ cfgSPN.validTriggers = [7 8];
 %% ============================================================
 
 cfgSPN.windows = { ...
-    [-1.5 -1.0] ...
-    [-1.0 -0.5] ...
-    [-0.5 0.0]};
+    [-1.5 -1.0]
+    [-1.0 -0.5]
+    [-0.5  0.0]
+    [-1.5  0.0]
+    [-0.3  0.0]};
 
 cfgSPN.window_names = { ...
-    'SPN_Early' ...
-    'SPN_Middle' ...
-    'SPN_Late'};
+    'SPN_Early'
+    'SPN_Middle'
+    'SPN_Late'
+    'SPN_Full'
+    'SPN_Derived'};
 
 cfgSPN.zoom_window = [-1.5 0.1];
 
@@ -70,7 +83,17 @@ cfgSPN.analysis_rois = { ...
     'SPN_CENTRAL',...
     'SPN_POSTERIOR',...
     'SPN_GLOBAL'};
+%% ============================================================
+% OUTPUT
+%% ============================================================
 
+outdir = fullfile( ...
+    step8_outroot,...
+    'STEP8_SPN');
+
+if ~exist(outdir,'dir')
+    mkdir(outdir);
+end
 %% ============================================================
 % BUILD SPN EPOCHS
 %% ============================================================
@@ -81,7 +104,7 @@ fprintf('BUILD SPN EPOCHS\n');
 fprintf('================================\n');
 
 subj_list_spn = build_spn_subject_list( ...
-    inputFolder,...
+    step2_indir,...
     cfgSPN);
 
 %% ============================================================
@@ -170,6 +193,7 @@ save( ...
     'SPN_Group',...
     'SPN_Stats',...
     'cfgSPN',...
+    'ROI',...
     '-v7.3');
 
 set(0,'DefaultFigureVisible',origState);

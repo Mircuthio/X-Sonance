@@ -245,6 +245,13 @@ origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
 addpath(genpath('D:\eeglab2026.0.0\'))
+
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
 %% ============================================================
 % OUTPUT DIRECTORY
 %% ============================================================
@@ -495,7 +502,45 @@ for r = 1:numel(roiNames)
         roiName);
 
 end
+%% ============================================================
+% GLOBAL COLOR LIMITS
+%% ============================================================
 
+allPower = [];
+allDiff  = [];
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    allPower = [ ...
+        allPower ;
+        TFR_Group.(roiName).Consonant.power(:) ;
+        TFR_Group.(roiName).Dissonant.power(:)];
+
+    allDiff = [ ...
+        allDiff ;
+        TFR_Group.(roiName).Difference.power(:)];
+
+end
+
+GLOBAL_TFR_MIN = prctile(allPower,2);
+GLOBAL_TFR_MAX = prctile(allPower,98);
+
+GLOBAL_DIFF_MAX = ...
+    prctile(abs(allDiff),98);
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('GLOBAL COLOR LIMITS\n');
+fprintf('=====================================\n');
+fprintf('TFR  : [%.3f %.3f]\n', ...
+    GLOBAL_TFR_MIN,...
+    GLOBAL_TFR_MAX);
+
+fprintf('DIFF : +/- %.3f\n', ...
+    GLOBAL_DIFF_MAX);
+fprintf('=====================================\n');
 %% ============================================================
 % BAND SUMMARY FROM TFR
 %% ============================================================
@@ -531,6 +576,10 @@ for r = 1:numel(roiNames)
     end
 
 end
+%% ============================================================
+% PLOTS
+%% ============================================================
+ 
 for r=1:numel(roiNames)
     roiName = roiNames{r};
     groupData = ...
@@ -585,8 +634,9 @@ for r=1:numel(roiNames)
 
     axis xy
     colorbar
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
-    title(sprintf('%s - Consonant',roiName))
+    title(sprintf('%s - Consonant',format_tex_name(roiName)))
 
     subplot(3,1,2)
 
@@ -597,8 +647,9 @@ for r=1:numel(roiNames)
 
     axis xy
     colorbar
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
-    title(sprintf('%s - Dissonant',roiName))
+    title(sprintf('%s - Dissonant',format_tex_name(roiName)))
 
     subplot(3,1,3)
 
@@ -607,19 +658,57 @@ for r=1:numel(roiNames)
         groupData.freq,...
         diffMap)
 
-    mx = max(abs(diffMap(:)));
-    if mx > 0
-        clim([-mx mx]);
-    end
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
     axis xy
     colorbar
 
-    title(sprintf('%s - Difference',roiName))
+    title(sprintf('%s - Difference',format_tex_name(roiName)))
     saveas( ...
         gcf,...
         fullfile( ...
         tfrdir,...
         sprintf('TFR_Group_%s.png',roiName)));
+    close
+    %% ============================================================
+    % DIFFERENCE ONLY TFR
+    %% ============================================================
+
+    diffdir = fullfile( ...
+        tfrdir,...
+        'Difference_Only');
+
+    if ~exist(diffdir,'dir')
+        mkdir(diffdir);
+    end
+
+    figure('Position',[100 100 900 600])
+
+    imagesc( ...
+        groupData.time,...
+        groupData.freq,...
+        diffMap)
+
+    axis xy
+    colorbar
+
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    xlabel('Time (s)')
+    ylabel('Frequency (Hz)')
+
+    title(sprintf( ...
+        '%s | Difference', ...
+        format_tex_name(roiName)));
+
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        diffdir,...
+        sprintf( ...
+        'DifferenceOnly_%s.png',...
+        roiName)));
+
     close
     meanConTime = ...
         mean(groupData.Consonant.power,1);
@@ -652,7 +741,7 @@ for r=1:numel(roiNames)
     ylabel('Power (dB)')
     title(sprintf( ...
         'Broadband TFR Time Course - %s',...
-        roiName))
+        format_tex_name(roiName)))
     saveas( ...
         gcf,...
         fullfile( ...
@@ -732,8 +821,8 @@ for r=1:numel(roiNames)
         title(sprintf( ...
             '%s Time Course - %s - %s',...
             bandName,...
-            roiName,...
-            cfgTFR.method));
+            format_tex_name(roiName),...
+            format_tex_name(cfgTFR.method)));
 
         saveas( ...
             gcf,...
@@ -748,6 +837,199 @@ for r=1:numel(roiNames)
 
     end
 
+end
+%% ============================================================
+% ZOOMED TFR PLOTS
+%% ============================================================
+
+PlotWindows = struct();
+
+% PlotWindows.Global = [-0.5 1.5];
+
+% Literature-driven
+PlotWindows.ERAN = [0.15 0.25];
+PlotWindows.MMN  = [0.10 0.25];
+PlotWindows.N5   = [0.45 0.55];
+
+% ERP-driven
+PlotWindows.EarlyNeg_170_220 = [0.17 0.22];
+PlotWindows.Rebound_220_320  = [0.22 0.32];
+PlotWindows.Late_450_550     = [0.45 0.55];
+
+% Broad descriptive windows
+PlotWindows.Post_100_250 = [0.10 0.25];
+PlotWindows.Post_250_500 = [0.25 0.50];
+PlotWindows.Post_500_800 = [0.50 0.80];
+
+windowNames = fieldnames(PlotWindows);
+
+zoomdir = fullfile(tfrdir,'Zoomed_TFR');
+
+if ~exist(zoomdir,'dir')
+    mkdir(zoomdir);
+end
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    groupData = TFR_Group.(roiName);
+
+    for w = 1:numel(windowNames)
+
+        winName = windowNames{w};
+
+        win = PlotWindows.(winName);
+
+        idxTime = ...
+            groupData.time >= win(1) & ...
+            groupData.time <= win(2);
+
+        tPlot = groupData.time(idxTime);
+
+        conMap = ...
+            groupData.Consonant.power(:,idxTime);
+
+        disMap = ...
+            groupData.Dissonant.power(:,idxTime);
+
+        diffMap = ...
+            groupData.Difference.power(:,idxTime);
+
+
+        figure('Position',[100 100 1000 900])
+
+        subplot(3,1,1)
+
+        imagesc( ...
+            tPlot,...
+            groupData.freq,...
+            conMap)
+
+        axis xy
+        colorbar
+        clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+        title(sprintf( ...
+            '%s | %s | Consonant',...
+            format_tex_name(roiName),...
+            format_tex_name(winName)));
+
+        xlabel('Time (s)')
+        ylabel('Frequency (Hz)')
+
+        subplot(3,1,2)
+
+        imagesc( ...
+            tPlot,...
+            groupData.freq,...
+            disMap)
+
+        axis xy
+        colorbar
+        clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+        title(sprintf( ...
+            '%s | %s | Dissonant',...
+            format_tex_name(roiName),...
+            format_tex_name(winName)));
+
+        xlabel('Time (s)')
+        ylabel('Frequency (Hz)')
+
+        subplot(3,1,3)
+
+        imagesc( ...
+            tPlot,...
+            groupData.freq,...
+            diffMap)
+
+        axis xy
+        colorbar
+
+        clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+        title(sprintf( ...
+            '%s | %s | Difference',...
+            format_tex_name(roiName),...
+            format_tex_name(winName)));
+
+        xlabel('Time (s)')
+        ylabel('Frequency (Hz)')
+
+        saveas( ...
+            gcf,...
+            fullfile( ...
+            zoomdir,...
+            sprintf( ...
+            'TFR_%s_%s.png',...
+            format_tex_name(roiName),...
+            format_tex_name(winName))));
+
+        close
+
+    end
+end
+%% ============================================================
+% DIFFERENCE-ONLY ZOOMED TFR
+%% ============================================================
+
+diffdir = fullfile(tfrdir,'Difference_Zoomed');
+
+if ~exist(diffdir,'dir')
+    mkdir(diffdir);
+end
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    groupData = TFR_Group.(roiName);
+
+    for w = 1:numel(windowNames)
+
+        winName = windowNames{w};
+
+        win = PlotWindows.(winName);
+
+        idxTime = ...
+            groupData.time >= win(1) & ...
+            groupData.time <= win(2);
+
+        tPlot = groupData.time(idxTime);
+
+        diffMap = ...
+            groupData.Difference.power(:,idxTime);
+
+        figure('Position',[100 100 900 500])
+
+        imagesc( ...
+            tPlot,...
+            groupData.freq,...
+            diffMap)
+
+        axis xy
+        colorbar
+
+        clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+        xlabel('Time (s)')
+        ylabel('Frequency (Hz)')
+
+        title(sprintf( ...
+            '%s | %s | Difference',...
+            format_tex_name(roiName),...
+            format_tex_name(winName)));
+
+        saveas( ...
+            gcf,...
+            fullfile( ...
+            diffdir,...
+            sprintf( ...
+            'Difference_%s_%s.png',...
+            roiName,...
+            winName)));
+
+        close
+    end
 end
 %% ============================================================
 % SAVE
