@@ -63,15 +63,21 @@ load( ...
 %% ============================================================
 % OUTPUT
 %% ============================================================
-outdir = ...
-    fullfile( ...
+
+Cases = build_bandpower_cases();
+
+iCase = 1;
+
+CaseCfg = Cases(iCase);
+
+outdir = fullfile( ...
     step2_indir,...
-    'STEP10_BANDPOWER_LOSO');
+    'STEP10_BANDPOWER_LOSO',...
+    CaseCfg.group,...
+    CaseCfg.name);
 
 if ~exist(outdir,'dir')
-
     mkdir(outdir);
-
 end
 
 %% ============================================================
@@ -90,27 +96,40 @@ rng(cfgBP.randomSeed)
 %% ------------------------------------------------------------
 % CLASSES
 %% ------------------------------------------------------------
-cfgBP.class_labels = { ...
-    'Consonant',...
-    'Dissonant'};
+cfgBP.class_labels = ...
+    CaseCfg.class_labels;
 
-cfgBP.class_codes = [7 8];
-
-cfgBP.labelMap.Consonant = 1;
-cfgBP.labelMap.Dissonant = 2;
+cfgBP.class_codes = ...
+    CaseCfg.class_codes;
 
 %% ------------------------------------------------------------
 % TIME WINDOW
 %% ------------------------------------------------------------
 cfgBP.analysis_window = ...
-    [-0.5 1.0];
+    CaseCfg.analysis_window;
+%% ------------------------------------------------------------
+% FEATURES MODE
+%% ------------------------------------------------------------
 
+cfgBP.feature_mode = ...
+    CaseCfg.feature_mode;
+%% ------------------------------------------------------------
+% FEATURES WINDOWS
+%% ------------------------------------------------------------
+cfgBP.feature_windows = ...
+    CaseCfg.feature_windows;
 %% ------------------------------------------------------------
 % POWER MODE
 %% ------------------------------------------------------------
 cfgBP.power_mode = ...
     'log';
+%% ------------------------------------------------------------
+% BASELINE
+%% ------------------------------------------------------------
 
+cfgBP.baseline_win = [-0.2 0];
+
+cfgBP.normalization = 'db';
 %% ------------------------------------------------------------
 % FREQUENCY BANDS
 %% ------------------------------------------------------------
@@ -122,6 +141,8 @@ cfgBP.bands.BetaHigh  = [20 30];
 cfgBP.bands.GammaLow  = [30 40];
 cfgBP.bands.GammaHigh = [40 90];
 
+cfgBP.analysis_bands = ...
+    CaseCfg.analysis_bands;
 %% ------------------------------------------------------------
 % ROI
 %% ------------------------------------------------------------
@@ -129,20 +150,19 @@ MAIN_ROI
 
 cfgBP.rois = ROI;
 
-cfgBP.analysis_rois = { ...
-    'ERAN',...
-    'MMN',...
-    'N5'};
+cfgBP.analysis_rois = ...
+    CaseCfg.analysis_rois;
 
 %% ------------------------------------------------------------
 % CLASSIFIERS
 %% ------------------------------------------------------------
+% cfgBP.classifiers = ...
+%     CaseCfg.classifiers;
 cfgBP.classifiers = { ...
     'QDA',...
     'SVC',...
     'KNN',...
     'NB'};
-
 %% ------------------------------------------------------------
 % DATASET FIELDS
 %% ------------------------------------------------------------
@@ -150,7 +170,7 @@ cfgBP.eventField = ...
     'eventLabel';
 
 cfgBP.subjectField = ...
-    'subjectID';
+    'subj_id';
 
 %% ------------------------------------------------------------
 % CLASSIFIER PARAMETERS
@@ -159,12 +179,6 @@ cfgBP.kfold = 4;
 
 cfgBP.numIterations = 100;
 
-%% ------------------------------------------------------------
-% PERFORMANCE
-%% ------------------------------------------------------------
-cfgBP.primaryMetric = ...
-    'BalancedAccuracy';
-
 %% ============================================================
 % BUILD DATASET
 %% ============================================================
@@ -172,6 +186,16 @@ BandPower_Dataset = ...
     build_bandpower_dataset( ...
     subj_list,...
     cfgBP);
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('DATASET SUMMARY\n');
+fprintf('================================\n');
+fprintf('Trials   : %d\n', ...
+    BandPower_Dataset.nTrials);
+fprintf('Subjects : %d\n', ...
+    BandPower_Dataset.nSubjects);
+fprintf('\n');
 
 %% ============================================================
 % SUBJECTS
@@ -239,16 +263,25 @@ for iClf = 1:numel(cfgBP.classifiers)
         %% =====================================================
         % BANDPOWER FEATURES
         %% =====================================================
-        Features = ...
-            run_bandpower_features( ...
+        Features = run_bandpower_features( ...
             TrainTrials,...
             TestTrials,...
             cfgBP);
+
+        fieldnames(Features.TrainEEG(1))
+
+        Features.SignalField
+
+        Features.nFeatures
+
+        size(Features.TrainEEG(1).BP)
 
         %% =====================================================
         % CLASSIFIER
         %% =====================================================
         parClassifier = struct();
+        parClassifier.InField = ...
+            Features.SignalField;
 
         [TrainEEG,...
          TestEEG,...

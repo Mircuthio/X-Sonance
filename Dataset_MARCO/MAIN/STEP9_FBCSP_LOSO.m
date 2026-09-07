@@ -81,9 +81,17 @@ load(fullfile(step2_indir,'subj_list.mat'));
 % OUTPUT
 %% ============================================================
 
+Cases = build_fbcsp_cases();
+
+iCase = 1;
+
+CaseCfg = Cases(iCase);
+
 outdir = fullfile( ...
     step2_indir,...
-    'STEP9_FBCSP_LOSO');
+    'STEP9_FBCSP_LOSO',...
+    CaseCfg.group,...
+    CaseCfg.name);
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
@@ -94,6 +102,15 @@ end
 %% ============================================================
 
 cfgFBCSP = struct();
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('EXPERIMENT\n');
+fprintf('================================\n');
+fprintf('Group : %s\n', ...
+    CaseCfg.group);
+fprintf('Case  : %s\n', ...
+    CaseCfg.name);
 
 %% ------------------------------------------------------------
 % RANDOM SEED
@@ -108,50 +125,63 @@ rng(cfgFBCSP.randomSeed)
 % CLASSES
 %% ------------------------------------------------------------
 
-cfgFBCSP.class_labels = { ...
-    'Consonant',...
-    'Dissonant'};
+cfgFBCSP.class_labels = ...
+    CaseCfg.class_labels;
 
-cfgFBCSP.class_codes = [7 8];
+cfgFBCSP.class_codes = ...
+    CaseCfg.class_codes;
 
-cfgFBCSP.labelMap.Consonant = 1;
-cfgFBCSP.labelMap.Dissonant = 2;
+cfgFBCSP.labelMap = ...
+    CaseCfg.labelMap;
 
 %% ------------------------------------------------------------
 % TIME WINDOW
 %% ------------------------------------------------------------
 
-cfgFBCSP.time_window = [-0.5 1.0];
+cfgFBCSP.time_window = CaseCfg.time_window;
 
+%% ------------------------------------------------------------
+% SUBEPOCHS
+%% ------------------------------------------------------------
+cfgFBCSP.useSubEpochs = ...
+    CaseCfg.useSubEpochs;
+
+cfgFBCSP.subEpochLength = ...
+    CaseCfg.subEpochLength;
+
+cfgFBCSP.subEpochOverlap = ...
+    CaseCfg.subEpochOverlap;
 %% ------------------------------------------------------------
 % FILTER BANK
 %% ------------------------------------------------------------
 
-cfgFBCSP.useFilterBank = true;
-cfgFBCSP.filterBankName = 'EEGbands';
+cfgFBCSP.useFilterBank = ...
+    CaseCfg.useFilterBank;
+
+cfgFBCSP.filterBankName = ...
+    CaseCfg.filterBankName;
 
 %% ------------------------------------------------------------
 % CSP
 %% ------------------------------------------------------------
 
-cfgFBCSP.csp_components = 4;
+cfgFBCSP.csp_components = ...
+    CaseCfg.csp_components;
 
 %% ------------------------------------------------------------
 % MUTUAL INFORMATION
 %% ------------------------------------------------------------
 
-cfgFBCSP.useMI = true;
-cfgFBCSP.mi_k = 5;
+cfgFBCSP.useMI = CaseCfg.useMI;
+
+cfgFBCSP.mi_k = CaseCfg.mi_k;
 
 %% ------------------------------------------------------------
 % CLASSIFIERS
 %% ------------------------------------------------------------
 
-cfgFBCSP.classifiers = { ...
-    'QDA',...
-    'SVC',...
-    'KNN',...
-    'NB'};
+cfgFBCSP.classifiers = ...
+    CaseCfg.classifiers;
 
 %% ------------------------------------------------------------
 % DATASET FIELDS
@@ -171,12 +201,7 @@ cfgFBCSP.signalField = 'eegFB';
 
 cfgFBCSP.kfold = 4;
 cfgFBCSP.numIterations = 100;
-%% ------------------------------------------------------------
-% PERFORMANCE
-%% ------------------------------------------------------------
 
-cfgFBCSP.primaryMetric = ...
-    'BalancedAccuracy';
 
 %% ============================================================
 % BUILD DATASET
@@ -194,6 +219,56 @@ FBCSP_Dataset = ...
     FBCSP_Dataset,...
     cfgFBCSP);
 
+%% ============================================================
+% SUBEPOCHS
+%% ============================================================
+if cfgFBCSP.useSubEpochs
+
+    parEpoch = ...
+        epochComputeParams();
+
+    parEpoch.InField = ...
+        cfgFBCSP.signalField;
+
+    parEpoch.OutField = ...
+        cfgFBCSP.signalField;
+
+    parEpoch.fample = ...
+        FBCSP_Dataset.fsample;
+
+    parEpoch.t_epoch = ...
+        cfgFBCSP.subEpochLength;
+
+    parEpoch.overlap_percent = ...
+        cfgFBCSP.subEpochOverlap;
+
+    [FBCSP_Dataset.trials,~] = ...
+        epochCompute( ...
+        FBCSP_Dataset.trials,...
+        parEpoch);
+
+    parMulti = struct();
+
+    parMulti.Infield = ...
+        cfgFBCSP.signalField;
+
+    FBCSP_Dataset.trials = ...
+        multiEEG( ...
+        FBCSP_Dataset.trials,...
+        parMulti);
+
+    fprintf('Trials after subepoching: %d\n', ...
+        numel(FBCSP_Dataset.trials));
+    fprintf('\n');
+    fprintf('================================\n');
+    fprintf('SUBEPOCHING\n');
+    fprintf('================================\n');
+    fprintf('Length  : %.3f s\n', ...
+        cfgFBCSP.subEpochLength);
+    fprintf('Overlap : %.1f %%\n', ...
+        cfgFBCSP.subEpochOverlap);
+
+end
 %% ============================================================
 % SUBJECTS
 %% ============================================================
@@ -274,6 +349,7 @@ for iClf = 1:numel(cfgFBCSP.classifiers)
         % CLASSIFIER
         %% ------------------------------------------------------------
         parClassifier = struct();
+        parClassifier.InField = Features.SignalField;
 
         [TrainEEG,...
             TestEEG,...
@@ -495,11 +571,12 @@ end
 %% ============================================================
 % SAVE
 %% ============================================================
-
 save( ...
     fullfile(outdir,...
-    'STEP9_FBCSP_LOSO.mat'),...
+    sprintf('%s.mat', ...
+    CaseCfg.name)),...
     'Results_LOSO',...
     'FBCSP_Dataset',...
     'cfgFBCSP',...
+    'CaseCfg',...
     '-v7.3');

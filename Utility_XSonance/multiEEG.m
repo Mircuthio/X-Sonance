@@ -9,7 +9,7 @@ data_out = struct();
 
 for i = 1:length(data_trials)
 
-    field_names = fieldnames(data_trials);
+    field_names = fieldnames(data_trials(1));
 
     current_eeg = data_trials(i).(Infield);
     current_time = data_trials(i).(strcat('time',Infield));
@@ -26,6 +26,8 @@ for i = 1:length(data_trials)
             end
         end
         data_out(counter,1).nEpoch = j;
+        data_out(counter,1).subEpochID = j;
+        data_out(counter,1).parentTrialID = data_trials(i).trialId;
         data_out(counter,1).OlDtrialId = data_out(counter).trialId;
         data_out(counter,1).trialId = counter;
         counter = counter + 1;

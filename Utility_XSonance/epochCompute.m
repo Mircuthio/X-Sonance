@@ -25,6 +25,9 @@ for nTrials = 1:size(data_trials,1)
     for nEp = 1:n_epoch
         id_start = bin_intervals(nEp,1);
         id_stop = bin_intervals(nEp,2);
+        if id_stop > size(eeg_trial,2)
+            error('Epoch interval exceeds signal length');
+        end
         EEG_final(nEp,:,:,:)= eeg_trial(:,id_start:id_stop,:);
         time_final(nEp,:) = time_trial(id_start:id_stop);
     end
