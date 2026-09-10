@@ -34,29 +34,15 @@ for iSub = 1:numel(subj_list)
         % LABEL ENCODING
         %% ----------------------------------------------------
 
-        switch trial.eventCode
+        eventName = trial.(cfgFBCSP.eventField);
 
-            case cfgFBCSP.class_codes(1)
+        label = find(strcmp(cfgFBCSP.class_labels, eventName), 1);
 
-                label = ...
-                    cfgFBCSP.labelMap.Consonant;
-
-                labelName = ...
-                    'Consonant';
-
-            case cfgFBCSP.class_codes(2)
-
-                label = ...
-                    cfgFBCSP.labelMap.Dissonant;
-
-                labelName = ...
-                    'Dissonant';
-
-            otherwise
-
-                continue
-
+        if isempty(label)
+            continue
         end
+
+        labelName = cfgFBCSP.class_labels{label};
 
         %% ----------------------------------------------------
         % TIME WINDOW
@@ -140,14 +126,19 @@ FBCSP_Dataset.srate = ...
 % CLASS COUNTS
 %% ============================================================
 
-labels = ...
-    [dataset_trials.label];
+% CLASS COUNTS
+labels = [dataset_trials.label];
+nClasses = numel(cfgFBCSP.class_codes);
 
-FBCSP_Dataset.nClass1 = ...
-    sum(labels == 1);
+for iClass = 1:nClasses
+    fieldName = sprintf('nClass%d', iClass);
+    FBCSP_Dataset.(fieldName) = sum(labels == iClass);
+end
 
-FBCSP_Dataset.nClass2 = ...
-    sum(labels == 2);
+for iClass = 1:nClasses
+    fieldName = sprintf('nClass%d', iClass);
+    fprintf('%s   : %d\n', cfgFBCSP.class_labels{iClass}, FBCSP_Dataset.(fieldName));
+end
 
 fprintf('\n');
 fprintf('Dataset created\n');
