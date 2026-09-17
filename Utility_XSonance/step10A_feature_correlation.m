@@ -1,0 +1,16 @@
+function CorrResults = ...
+    step10A_feature_correlation( ...
+    FeatureDataset)
+
+R = corr( ...
+    FeatureDataset.X,...
+    'rows','pairwise');
+
+CorrResults = struct();
+
+CorrResults.R = R;
+
+CorrResults.FeatureNames = ...
+    FeatureDataset.FeatureNames;
+
+end
