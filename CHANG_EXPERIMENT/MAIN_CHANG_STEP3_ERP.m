@@ -299,10 +299,10 @@ for i=1:numel(comparisonNameList)
                     cfgPlot = struct();
                     if strcmp(cfg.comparisonName,'All')
                         cfgPlot.line_colors = [
-                        0.00 0.35 0.90 ;   % 101
-                        0.85 0.20 0.20 ;   % 102
-                        0.10 0.60 0.25     % 103
-                        ];
+                            0.00 0.35 0.90 ;   % 101
+                            0.85 0.20 0.20 ;   % 102
+                            0.10 0.60 0.25     % 103
+                            ];
                         cfgPlot.patch_alpha = 0.08;
                         cfgPlot.line_width_map = [2 2 2];
                     end
@@ -333,7 +333,25 @@ for i=1:numel(comparisonNameList)
                 fprintf('%s\n',ME.message);
             end
         end
+        refFields = fieldnames( ...
+            subj_list(1).data_trials);
 
+        for iSub = 2:numel(subj_list)
+
+            currFields = fieldnames( ...
+                subj_list(iSub).data_trials);
+
+            if ~isequal(sort(refFields), ...
+                    sort(currFields))
+
+                fprintf('\nFIELD MISMATCH: %s\n', ...
+                    subj_list(iSub).subj_id);
+
+                disp(setxor(refFields,currFields));
+
+            end
+
+        end
         %% GROUP MODE: concatenate all trials, build pooled ERP per ROI
         current_idx = 1;
         pooled_trials_subject = struct();

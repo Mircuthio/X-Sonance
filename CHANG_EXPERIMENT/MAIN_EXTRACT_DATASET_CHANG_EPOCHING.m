@@ -29,6 +29,10 @@ marker_end   = 20;
 
 validTriggers = [101 102 103];
 
+% Epoch window: -4s +2s
+preSec  = 4;
+postSec = 2;
+
 eventLabels = containers.Map( ...
     'KeyType','double', ...
     'ValueType','char');
@@ -108,7 +112,7 @@ for s = 1:numel(files)
         codeStart  = eventCodes(sIdx);
         codeTarget = eventCodes(sIdx+1);
         codeEnd    = eventCodes(sIdx+2);
-        
+
 
         if codeStart ~= marker_start
             continue
@@ -122,18 +126,33 @@ for s = 1:numel(files)
             continue
         end
 
-        startSample  = round(eventLat(sIdx));
-        targetSample = round(eventLat(sIdx+1));
-        endSample    = round(eventLat(sIdx+2));
+        trialStartSample  = round(eventLat(sIdx));
+        targetSample      = round(eventLat(sIdx+1));
+        trialEndSample    = round(eventLat(sIdx+2));
 
-        if endSample <= startSample
+        % Mantieni il controllo sul pattern 10-X-20
+        if trialEndSample <= trialStartSample
+            continue
+        end
+
+        % Epoch fissa: -4s / +2s rispetto al target
+        startSample = targetSample - round(preSec*Fs);
+        endSample   = targetSample + round(postSec*Fs) - 1;
+
+        % Evita trial che escono dal segnale
+        if startSample < 1 || endSample > size(EEG.data,2)
             continue
         end
 
         eegEpoch = EEG.data(:,startSample:endSample);
 
-        timeVec = ...
-            ((startSample:endSample)-targetSample)./Fs;
+        expectedLength = ...
+            round((preSec + postSec)*Fs);
+
+        assert(size(eegEpoch,2)==expectedLength,...
+            'Unexpected epoch length');
+
+        timeVec = (-round(preSec*Fs):round(postSec*Fs)-1)/Fs;
 
         trialCounter = trialCounter + 1;
 
@@ -211,23 +230,29 @@ for s = 1:numel(files)
         data_trials(trialCounter).conditionLabel = ...
             eventLabels(codeTarget);
 
-        data_trials(trialCounter).trialStartSample = ...
-            startSample;
+        data_trials(trialCounter).trialMarkerStartSample = ...
+            trialStartSample;
 
         data_trials(trialCounter).targetSample = ...
             targetSample;
 
-        data_trials(trialCounter).trialEndSample = ...
-            endSample;
+        data_trials(trialCounter).trialMarkerEndSample = ...
+            trialEndSample;
 
         data_trials(trialCounter).trialDurationSec = ...
-            (endSample-startSample)/Fs;
+            (trialEndSample-trialStartSample)/Fs;
+
+        data_trials(trialCounter).epochStartSample = ...
+            startSample;
+
+        data_trials(trialCounter).epochEndSample = ...
+            endSample;
 
         data_trials(trialCounter).preTargetDurationSec = ...
-            (targetSample-startSample)/Fs;
+            (targetSample-trialStartSample)/Fs;
 
         data_trials(trialCounter).postTargetDurationSec = ...
-            (endSample-targetSample)/Fs;
+            (trialEndSample-targetSample)/Fs;
 
         data_trials(trialCounter).eventSequence = ...
             [codeStart codeTarget codeEnd];
@@ -293,12 +318,21 @@ for s = 1:numel(files)
         ylabel('Amplitude');
 
     end
-    assert(numel(data_trials)==sum(eventCodes==10),...
-    'Mismatch between START markers and extracted trials');
+    % assert(numel(data_trials)==sum(eventCodes==10),...
+    %     'Mismatch between START markers and extracted trials');
+    assert(numel(data_trials) <= sum(eventCodes==10));
+    fprintf('START markers : %d\n',sum(eventCodes==10));
+    fprintf('Extracted     : %d\n',numel(data_trials));
     %% ===================================================================
     % SAVE
     % ====================================================================
+    epochLengths = arrayfun(@(x) size(x.eeg,2), data_trials);
 
+    fprintf('Epoch lengths: ');
+    disp(unique(epochLengths));
+
+    assert(all(epochLengths == expectedLength), ...
+        'Unexpected epoch lengths detected');
     save( ...
         fullfile(outputFolder,...
         sprintf('%s_epochData.mat',...
