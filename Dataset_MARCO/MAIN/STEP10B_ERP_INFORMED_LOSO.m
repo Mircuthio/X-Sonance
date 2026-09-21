@@ -68,7 +68,7 @@ disable_eeglab();
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 %% ============================================================
 % OUTPUT
@@ -166,6 +166,7 @@ cfgINF = struct();
 
 cfgINF.randomSeed = 10;
 
+cfgINF.useZScore = false;
 rng('default')
 rng(cfgINF.randomSeed)
 
@@ -183,17 +184,16 @@ cfgINF.class_codes = ...
 % FEATURE SET
 %% ------------------------------------------------------------
 
-cfgINF.feature_set = { ...
-    'ERPIndex', ...
-    'ERAN_B', ...
-    'BetaLow'};
+cfgINF.feature_set = ...
+    ERPINF_Dataset.FeatureNames;
+
 %% ------------------------------------------------------------
 % FEATURE FAMILIES
 %% ------------------------------------------------------------
 
 cfgINF.useERPIndex = true;
 cfgINF.useERANB    = true;
-cfgINF.useBetaLow  = true;
+cfgINF.useBetaLow  = false;
 %% ------------------------------------------------------------
 % DATASET WINDOW
 %% ------------------------------------------------------------
@@ -214,8 +214,7 @@ cfgINF.rois = ROI;
 %% ------------------------------------------------------------
 
 cfgINF.classifiers = { ...
-    'QDA',...
-    'KNN'};
+    'QDA'};
 
 %% ------------------------------------------------------------
 % LOSO PARAMETERS
@@ -300,7 +299,35 @@ for iClf = 1:numel(cfgINF.classifiers)
             split_loso_trials( ...
             ERPINF_Dataset,...
             testSubject);
+        if cfgINF.useZScore
 
+            Xtrain = vertcat(TrainTrials.ERPINF);
+            Xtest  = vertcat(TestTrials.ERPINF);
+
+            mu = mean(Xtrain,1);
+
+            sd = std(Xtrain,[],1);
+
+            sd(sd==0) = 1;
+
+            Xtrain = (Xtrain-mu)./sd;
+            Xtest  = (Xtest-mu)./sd;
+
+            for iT = 1:numel(TrainTrials)
+
+                TrainTrials(iT).ERPINF = ...
+                    Xtrain(iT,:);
+
+            end
+
+            for iT = 1:numel(TestTrials)
+
+                TestTrials(iT).ERPINF = ...
+                    Xtest(iT,:);
+
+            end
+
+        end
         %% =====================================================
         % ERP-INFORMED FEATURES
         %% =====================================================
@@ -604,7 +631,9 @@ for iClf = 1:numel(cfgINF.classifiers)
 
     SummaryTable.nFeatures(iClf,1) = ...
     Results_LOSO.(classifierName).Fold(1).nFeatures;
-
+    
+    SummaryTable.ZScore(iClf,1) = ...
+        cfgINF.useZScore;
 end
 
 writetable( ...

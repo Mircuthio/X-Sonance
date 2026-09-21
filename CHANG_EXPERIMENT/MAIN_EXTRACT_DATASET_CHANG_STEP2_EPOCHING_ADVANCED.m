@@ -8,10 +8,10 @@ debugMode = true;
 % PATHS
 % ========================================================================
 inputFolder = ...
-    'D:\X-SONANCE\CHANG_EXPERIMENT\';
+    'C:\Users\mirco\Desktop\X-SONANCE\CHANG_EXPERIMENT\';
 
 outputFolder = ...
-    'D:\X-SONANCE\CHANG_EXPERIMENT\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\CHANG_EXPERIMENT\EPOCH_DATA';
 
 if ~exist(outputFolder,'dir')
     mkdir(outputFolder);

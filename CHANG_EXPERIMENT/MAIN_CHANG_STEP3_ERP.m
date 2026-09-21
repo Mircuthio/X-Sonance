@@ -12,7 +12,7 @@ addpath(genpath('D:\eeglab2026.0.0\'))
 % INPUT DIRECTORY
 %% ============================================================
 step2_indir = ...
-    'D:\X-SONANCE\CHANG_EXPERIMENT\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\CHANG_EXPERIMENT\EPOCH_DATA';
 if ~exist(step2_indir, 'dir')
     error('Cartella STEP2 non trovata: %s', step2_indir);
 end
@@ -20,7 +20,7 @@ end
 % OUTPUT DIRECTORY
 %% ============================================================
 step3_outroot = ...
-    'D:\X-SONANCE\CHANG_EXPERIMENT\STEP3_ERP';
+    'C:\Users\mirco\Desktop\X-SONANCE\CHANG_EXPERIMENT\STEP3_ERP';
 
 if ~exist(step3_outroot,'dir')
     mkdir(step3_outroot);

@@ -21,7 +21,7 @@ set(groot,...
 %% ============================================================
 
 step2_indir = ...
-'D:\X-SONANCE\Dataset_MARCO\';
+'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
@@ -29,7 +29,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
 step5_outroot = ...
     fullfile( ...
-    'D:\X-SONANCE\Dataset_MARCO');
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO');
 
 if ~exist(step5_outroot,'dir')
     mkdir(step5_outroot);

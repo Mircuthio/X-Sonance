@@ -28,7 +28,7 @@ disable_eeglab();
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 %% ============================================================
 % OUTPUT
@@ -52,14 +52,27 @@ if ~exist(outdir,'dir')
     mkdir(outdir);
 end
 %% ============================================================
-% BUILD DATASET
+% LOAD DATASET
 %% ============================================================
+
+datasetName = ...
+    'ERPINF_Dataset_ERPINDEX_ERANB.mat';
 
 load( ...
     fullfile( ...
     step2_indir,...
     'STEP10BA_ERPINF_DATASET',...
-    'ERPINF_Dataset_CACHED.mat'));
+    datasetName));
+
+ERPINF_Dataset = DatasetOut;
+
+outdir = ...
+    fullfile(outdir,'ERPINDEX_ERANB');
+
+if ~exist(outdir,'dir')
+    mkdir(outdir);
+end
+
 assert( ...
     isfield(ERPINF_Dataset.trials,'ERPINF'), ...
     'ERPINF field missing');
@@ -79,6 +92,7 @@ disp(ERPINF_Dataset.FeatureNames(:))
 cfgINF = struct();
 
 cfgINF.randomSeed = 10;
+cfgINF.useZScore = true;
 
 rng('default')
 rng(cfgINF.randomSeed)
@@ -97,14 +111,12 @@ cfgINF.class_codes = ...
 % FEATURE SET
 %% ------------------------------------------------------------
 
-cfgINF.feature_set = { ...
-    'ERPIndex',...
-    'ERAN_B',...
-    'BetaLow'};
+cfgINF.feature_set = ...
+    ERPINF_Dataset.FeatureNames;
 
 cfgINF.useERPIndex = true;
 cfgINF.useERANB    = true;
-cfgINF.useBetaLow  = true;
+cfgINF.useBetaLow  = false;
 
 %% ------------------------------------------------------------
 % DATASET WINDOW
@@ -189,7 +201,39 @@ for iClf = 1:numel(cfgINF.classifiers)
             split_trialwise_trials( ...
             ERPINF_Dataset,...
             cfgINF);
+        %% =====================================================
+        % Z-SCORE NORMALIZATION
+        %% =====================================================
 
+        Xtrain = vertcat(TrainTrials.ERPINF);
+
+        Xtest = vertcat(TestTrials.ERPINF);
+
+        mu = mean(Xtrain,1);
+
+        sd = std(Xtrain,[],1);
+
+        sd(sd == 0) = 1;
+
+        Xtrain = ...
+            (Xtrain - mu) ./ sd;
+
+        Xtest = ...
+            (Xtest - mu) ./ sd;
+
+        for iT = 1:numel(TrainTrials)
+
+            TrainTrials(iT).ERPINF = ...
+                Xtrain(iT,:);
+
+        end
+
+        for iT = 1:numel(TestTrials)
+
+            TestTrials(iT).ERPINF = ...
+                Xtest(iT,:);
+
+        end
         %% =====================================================
         % ERP-INFORMED FEATURES
         %% =====================================================
@@ -345,7 +389,45 @@ for iClf = 1:numel(cfgINF.classifiers)
 
     end
 end
+%% ============================================================
+% ITERATION METRICS
+%% ============================================================
 
+for iClf = 1:numel(cfgINF.classifiers)
+
+    classifierName = ...
+        cfgINF.classifiers{iClf};
+
+    T = table();
+
+    for iIter = 1:cfgINF.numIterations
+
+        T.Iteration(iIter,1) = ...
+            iIter;
+
+        T.ACC(iIter,1) = ...
+            Results_TrialWise.(classifierName).Iter(iIter).TestMetrics.ACC;
+
+        T.BA(iIter,1) = ...
+            Results_TrialWise.(classifierName).Iter(iIter).TestMetrics.BA;
+
+        T.F1(iIter,1) = ...
+            Results_TrialWise.(classifierName).Iter(iIter).TestMetrics.F1;
+
+        T.MCC(iIter,1) = ...
+            Results_TrialWise.(classifierName).Iter(iIter).TestMetrics.MCC;
+
+    end
+
+    writetable( ...
+        T,...
+        fullfile( ...
+        outdir,...
+        sprintf( ...
+        '%s_IterationMetrics.csv',...
+        classifierName)));
+
+end
 %% ============================================================
 % SUMMARY
 %% ============================================================
@@ -423,10 +505,47 @@ for iClf = 1:numel(cfgINF.classifiers)
         Results_TrialWise.(classifierName).MeanMCC);
 
 end
+%% ============================================================
+% SUMMARY TABLE
+%% ============================================================
 
+SummaryTable = table();
+
+for iClf = 1:numel(cfgINF.classifiers)
+
+    classifierName = ...
+        cfgINF.classifiers{iClf};
+
+    SummaryTable.Classifier{iClf,1} = ...
+        classifierName;
+
+    SummaryTable.ACC(iClf,1) = ...
+        Results_TrialWise.(classifierName).MeanAccuracy;
+
+    SummaryTable.BA(iClf,1) = ...
+        Results_TrialWise.(classifierName).MeanBalancedAccuracy;
+
+    SummaryTable.F1(iClf,1) = ...
+        Results_TrialWise.(classifierName).MeanF1;
+
+    SummaryTable.MCC(iClf,1) = ...
+        Results_TrialWise.(classifierName).MeanMCC;
+
+    SummaryTable.nFeatures(iClf,1) = ...
+        Results_TrialWise.(classifierName).Iter(1).nFeatures;
+    SummaryTable.ZScore(iClf,1) = ...
+        cfgINF.useZScore;
+end
+
+writetable( ...
+    SummaryTable,...
+    fullfile( ...
+    outdir,...
+    'ClassifierSummary.csv'));
 %% ============================================================
 % SAVE
 %% ============================================================
+
 if numel(cfgINF.classifiers) == 1
 
     saveName = sprintf( ...
