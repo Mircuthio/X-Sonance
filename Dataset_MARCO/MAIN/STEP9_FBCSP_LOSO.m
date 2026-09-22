@@ -73,17 +73,17 @@ disable_eeglab();
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 
 %% ============================================================
 % OUTPUT
 %% ============================================================
-outputdirCASE = 'STEP9_FBCSP_LOSO\EPOCHED';
+outputdirCASE = 'STEP9_FBCSP_LOSO\CSP2\';
 
 Cases = build_fbcsp_cases();
-numiCase =1;
+numiCase = 18;
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));
@@ -112,7 +112,18 @@ for iCase = 1:numel(numiCase)
             CaseCfg.group);
         fprintf('Case  : %s\n', ...
             CaseCfg.name);
+        fprintf('Window : %.3f %.3f\n', ...
+            CaseCfg.time_window(1),...
+            CaseCfg.time_window(2));
 
+        fprintf('FilterBank : %s\n', ...
+            CaseCfg.filterBankName);
+
+        fprintf('CSP : %d\n', ...
+            CaseCfg.csp_components);
+
+        fprintf('MI : %d\n', ...
+            CaseCfg.mi_k);
         %% ------------------------------------------------------------
         % RANDOM SEED
         %% ------------------------------------------------------------
@@ -141,14 +152,11 @@ for iCase = 1:numel(numiCase)
         %% ------------------------------------------------------------
         % SUBEPOCHS
         %% ------------------------------------------------------------
-        cfgFBCSP.useSubEpochs = true;
-            % CaseCfg.useSubEpochs;
+        cfgFBCSP.useSubEpochs =  CaseCfg.useSubEpochs;
 
-        cfgFBCSP.subEpochLength = 0.1;
-            % CaseCfg.subEpochLength;
+        cfgFBCSP.subEpochLength = CaseCfg.subEpochLength;
 
-        cfgFBCSP.subEpochOverlap = 50;
-            % CaseCfg.subEpochOverlap;
+        cfgFBCSP.subEpochOverlap = CaseCfg.subEpochOverlap;
         %% ------------------------------------------------------------
         % FILTER BANK
         %% ------------------------------------------------------------
@@ -162,8 +170,8 @@ for iCase = 1:numel(numiCase)
         % CSP
         %% ------------------------------------------------------------
 
-        cfgFBCSP.csp_components = ...
-            CaseCfg.csp_components;
+        cfgFBCSP.csp_components = 2;
+            % CaseCfg.csp_components;
 
         %% ------------------------------------------------------------
         % MUTUAL INFORMATION
@@ -366,7 +374,7 @@ for iCase = 1:numel(numiCase)
                     mdlPredictParams();
 
                 parPredict.InField = Features.SignalField;
-
+ 
                 parPredict.OutField = ...
                     PredField;
 
@@ -563,6 +571,14 @@ for iCase = 1:numel(numiCase)
 
             fprintf('Std MCC               : %.4f\n', ...
                 Results_LOSO.(classifierName).StdMCC);
+            fprintf('Features : %d\n', ...
+                Results_LOSO.(classifierName).Fold(1).nFeatures);
+            fprintf('FilterBank : %s\n', ...
+                cfgFBCSP.filterBankName);
+
+            fprintf('Window : %.3f %.3f\n', ...
+                cfgFBCSP.time_window(1),...
+                cfgFBCSP.time_window(2));
         end
 
         %% ============================================================

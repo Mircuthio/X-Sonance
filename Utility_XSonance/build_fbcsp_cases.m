@@ -208,4 +208,398 @@ Cases(iCase).class_labels = {'Consonant','Dissonant','ControlGOAL'};
 Cases(iCase).time_window = [0.45 0.55];
 Cases(iCase).notes = 'N5 derived window, Consonant vs Dissonant vs ControlGOAL';
 
+
+%% ============================================================
+% PART3
+% ERP GUIDED FBCSP
+%% ============================================================
+
+%% ------------------------------------------------------------
+% P3_01
+% ERAN_B WINDOW
+%% ------------------------------------------------------------
+
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P3_01';
+
+Cases(iCase).group = ...
+    'PART3_ERP_GUIDED';
+
+Cases(iCase).name = ...
+    'ERANB_150_350_CD';
+
+Cases(iCase).class_codes = ...
+    [7 8];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','Dissonant'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.35];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = ...
+    4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = ...
+    8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP. ERAN_B focused window 150-350 ms';
+
+%% ------------------------------------------------------------
+% P3_02
+% ERAN + N5 WINDOW
+%% ------------------------------------------------------------
+
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P3_02';
+
+Cases(iCase).group = ...
+    'PART3_ERP_GUIDED';
+
+Cases(iCase).name = ...
+    'ERANB_150_500_CD';
+
+Cases(iCase).class_codes = ...
+    [7 8];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','Dissonant'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.50];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = ...
+    4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = ...
+    8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP. Extended ERAN/N5 window 150-500 ms';
+
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P4_01';
+
+Cases(iCase).group = ...
+    'PART4_ERP_GUIDED_150_350';
+
+Cases(iCase).name = ...
+    'ERANB_150_350_CON_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [7 3];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.35];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-350 ms. Consonant vs ControlGOAL';
+
+% P4_02
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P4_02';
+
+Cases(iCase).group = ...
+    'PART4_ERP_GUIDED_150_350';
+
+Cases(iCase).name = ...
+    'ERANB_150_350_DIS_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [8 3];
+
+Cases(iCase).class_labels = ...
+    {'Dissonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.35];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-350 ms. Dissonant vs ControlGOAL';
+
+% P4_03
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P4_03';
+
+Cases(iCase).group = ...
+    'PART4_ERP_GUIDED_150_350';
+
+Cases(iCase).name = ...
+    'ERANB_150_350_CD_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [7 8 3];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','Dissonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.35];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-350 ms. Consonant vs Dissonant vs ControlGOAL';
+
+
+% P5_01
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P5_01';
+
+Cases(iCase).group = ...
+    'PART5_ERP_GUIDED_150_500';
+
+Cases(iCase).name = ...
+    'ERANB_150_500_CON_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [7 3];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.50];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-500 ms. Consonant vs ControlGOAL';
+
+% P5_02
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P5_02';
+
+Cases(iCase).group = ...
+    'PART5_ERP_GUIDED_150_500';
+
+Cases(iCase).name = ...
+    'ERANB_150_500_DIS_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [8 3];
+
+Cases(iCase).class_labels = ...
+    {'Dissonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.50];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-500 ms. Dissonant vs ControlGOAL';
+
+
+%P5_03
+iCase = iCase + 1;
+
+Cases(iCase) = base;
+
+Cases(iCase).case_id = 'P5_03';
+
+Cases(iCase).group = ...
+    'PART5_ERP_GUIDED_150_500';
+
+Cases(iCase).name = ...
+    'ERANB_150_500_CD_CONTROL';
+
+Cases(iCase).class_codes = ...
+    [7 8 3];
+
+Cases(iCase).class_labels = ...
+    {'Consonant','Dissonant','ControlGOAL'};
+
+Cases(iCase).time_window = ...
+    [0.15 0.50];
+
+Cases(iCase).useSubEpochs = true;
+
+Cases(iCase).subEpochLength = ...
+    0.075;
+
+Cases(iCase).subEpochOverlap = ...
+    50;
+
+Cases(iCase).useFilterBank = true;
+
+Cases(iCase).filterBankName = ...
+    'ERP_GUIDED';
+
+Cases(iCase).csp_components = 4;
+
+Cases(iCase).useMI = true;
+
+Cases(iCase).mi_k = 8;
+
+Cases(iCase).classifiers = ...
+    {'QDA'};
+
+Cases(iCase).notes = ...
+    'ERP-guided FBCSP 150-500 ms. Consonant vs Dissonant vs ControlGOAL';
 end
