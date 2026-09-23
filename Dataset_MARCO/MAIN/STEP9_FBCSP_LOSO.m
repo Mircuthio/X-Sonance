@@ -80,10 +80,10 @@ load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
 % OUTPUT
 %% ============================================================
-outputdirCASE = 'STEP9_FBCSP_LOSO\CSP2\';
+outputdirCASE = 'STEP9_FBCSP_LOSO';
 
 Cases = build_fbcsp_cases();
-numiCase = 18;
+numiCase = 20;
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));
@@ -170,8 +170,7 @@ for iCase = 1:numel(numiCase)
         % CSP
         %% ------------------------------------------------------------
 
-        cfgFBCSP.csp_components = 2;
-            % CaseCfg.csp_components;
+        cfgFBCSP.csp_components = CaseCfg.csp_components;
 
         %% ------------------------------------------------------------
         % MUTUAL INFORMATION

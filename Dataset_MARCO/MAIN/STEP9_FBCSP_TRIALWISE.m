@@ -25,7 +25,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
 Cases = build_fbcsp_cases();
 
-numiCase = 19;
+numiCase = 20;
 for iCase = 1:numel(numiCase)
     try
 
@@ -150,7 +150,7 @@ for iCase = 1:numel(numiCase)
 
         cfgFBCSP.kfold = 4;
 
-        cfgFBCSP.numIterations = 50;
+        cfgFBCSP.numIterations = 25;
 
         %% ============================================================
         % BUILD DATASET

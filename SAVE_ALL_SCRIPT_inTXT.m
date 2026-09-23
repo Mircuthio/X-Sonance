@@ -1,7 +1,7 @@
 clc; clear;
 
 % Cartella dove ci sono gli script .m
-cartella = 'D:\X-SONANCE\Dataset_MARCO\MAIN';
+cartella = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\MAIN';
 
 % % Ordine deciso da te
 % listaFile = { ...
@@ -11,7 +11,7 @@ cartella = 'D:\X-SONANCE\Dataset_MARCO\MAIN';
 %     };
 
 % File txt finale
-fileOutput = fullfile(cartella, 'NEWtutti_gli_script.txt');
+fileOutput = fullfile(cartella, 'MAIN_MARCO_Script.txt');
 
 fidOut = fopen(fileOutput, 'w');
 if fidOut == -1

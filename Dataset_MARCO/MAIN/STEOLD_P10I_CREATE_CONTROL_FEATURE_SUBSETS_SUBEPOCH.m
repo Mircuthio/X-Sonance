@@ -1,17 +1,10 @@
 %% =========================================================================
-% STEP10G_CREATE_CONTROL_FEATURE_SUBSETS
+% STEP10I_CREATE_CONTROL_FEATURE_SUBSETS_SUBEPOCH
 %% =========================================================================
 
 clear
 close all
 clc
-
-
-%% ============================================================
-% MODE
-%% ============================================================
-
-useSubEpoch = true;
 
 %% ============================================================
 % PATHS
@@ -20,17 +13,9 @@ useSubEpoch = true;
 step2_indir = ...
     'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
-if useSubEpoch
-    indir = fullfile( ...
-        step2_indir,...
-        'STEP10H_CONTROL_DATASETS_SUBEPOCH');
-    suffix = '_SUBEPOCH';
-else 
-    indir = fullfile( ...
-        step2_indir,...
-        'STEP10F_CONTROL_DATASETS');
-    suffix = '';
-end
+indir = fullfile( ...
+    step2_indir,...
+    'STEP10H_CONTROL_DATASETS_SUBEPOCH');
 
 %% ============================================================
 % FILES
@@ -42,16 +27,11 @@ files = dir( ...
 
 fprintf('\n');
 fprintf('================================\n');
-fprintf('FEATURE SUBSET CREATION\n');
+fprintf('SUBEPOCH FEATURE SUBSET CREATION\n');
 fprintf('================================\n');
 fprintf('Datasets found : %d\n', ...
     numel(files));
-fprintf('Mode : ');
-if useSubEpoch
-    fprintf('SUBEPOCH\n');
-else
-    fprintf('TRIAL\n');
-end
+
 %% ============================================================
 % LOOP DATASETS
 %% ============================================================
@@ -63,6 +43,7 @@ for iFile = 1:numel(files)
     fprintf('DATASET %d/%d\n', ...
         iFile,...
         numel(files));
+
     fprintf('%s\n', ...
         files(iFile).name);
 
@@ -85,7 +66,8 @@ for iFile = 1:numel(files)
     % FEATURE MAP
     %% ========================================================
 
-    ERPINDEX_idx = 1:4;
+    ERPINDEX_idx = ...
+        1:4;
 
     ERPINDEX_ERANB_idx = ...
         1:10;
@@ -114,9 +96,9 @@ for iFile = 1:numel(files)
         ERPINDEX_idx,...
         fullfile( ...
         indir,...
-        sprintf('%s_ERPINDEX%s.mat', ...
-        baseName,...
-        suffix)));
+        sprintf( ...
+        '%s_ERPINDEX_SUBEPOCH.mat',...
+        baseName)));
 
     %% ========================================================
     % ERPINDEX + ERANB
@@ -128,9 +110,8 @@ for iFile = 1:numel(files)
         fullfile( ...
         indir,...
         sprintf( ...
-        '%s_ERPINDEX_ERANB%s.mat',...
-        baseName,...
-        suffix)));
+        '%s_ERPINDEX_ERANB_SUBEPOCH.mat',...
+        baseName)));
 
     %% ========================================================
     % ERPINDEX + MINPEAK
@@ -142,12 +123,11 @@ for iFile = 1:numel(files)
         fullfile( ...
         indir,...
         sprintf( ...
-        '%s_ERPINDEX_MINPEAK%s.mat',...
-        baseName,...
-        suffix)));
+        '%s_ERPINDEX_MINPEAK_SUBEPOCH.mat',...
+        baseName)));
 
     %% ========================================================
-    % FULL
+    % FULL COPY
     %% ========================================================
 
     create_subset_dataset( ...
@@ -156,15 +136,14 @@ for iFile = 1:numel(files)
         fullfile( ...
         indir,...
         sprintf( ...
-        '%s_FULLCOPY%s.mat',...
-        baseName,...
-        suffix)));
+        '%s_FULLCOPY_SUBEPOCH.mat',...
+        baseName)));
 
 end
 
 fprintf('\n');
 fprintf('================================\n');
-fprintf('ALL FEATURE SUBSETS CREATED\n');
+fprintf('ALL SUBEPOCH FEATURE SUBSETS CREATED\n');
 fprintf('================================\n');
 
 %% =========================================================================
