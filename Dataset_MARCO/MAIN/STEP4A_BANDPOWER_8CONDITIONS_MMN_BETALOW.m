@@ -14,7 +14,7 @@ set(0,'DefaultFigureVisible','off');
 %% ============================================================
 
 step2_indir = ...
-'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 
 files = dir(fullfile(step2_indir,'*_epochData.mat'));
 
@@ -85,7 +85,7 @@ cfgBP.bands.BetaLow = [13 20];
 %% ============================================================
 
 outdir = ...
-'D:\X-SONANCE\Dataset_MARCO\STEP4A_MMN_BETALOW_8CONDITIONS';
+'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP4A_MMN_BETALOW_8CONDITIONS';
 
 if ~exist(outdir,'dir')
     mkdir(outdir);

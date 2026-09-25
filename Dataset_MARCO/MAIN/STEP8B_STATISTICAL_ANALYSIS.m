@@ -7,7 +7,7 @@ close all
 clc
 
 load_dir = ...
-'D:\X-SONANCE\Dataset_MARCO\';
+'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load('ERAN_STEP5.mat','ERAN_Stats')
 

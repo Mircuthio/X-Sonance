@@ -1430,6 +1430,652 @@ fprintf('ERPINF DATASET SAVED\n');
 fprintf('================================\n');
 
 ==============================
+FILE: OLD_STEP10BB_CREATE_ERPINDEX_MINPEAK.m
+==============================
+
+%% =========================================================================
+% STEP10BB_CREATE_ERPINDEX_MINPEAK
+%% =========================================================================
+
+clear
+close all
+clc
+
+%% ============================================================
+% PATHS
+%% ============================================================
+
+step2_indir = ...
+    'D:\X-SONANCE\Dataset_MARCO\';
+
+indir = fullfile( ...
+    step2_indir,...
+    'STEP10BA_ERPINF_DATASET');
+
+%% ============================================================
+% LOAD FULL DATASET
+%% ============================================================
+
+load( ...
+    fullfile( ...
+    indir,...
+    'ERPINF_Dataset_CACHED.mat'));
+
+%% ============================================================
+% FEATURES
+%% ============================================================
+
+disp('AVAILABLE FEATURES')
+disp(ERPINF_Dataset.FeatureNames(:))
+
+%% ============================================================
+% KEEP FEATURES
+%%
+% 1 ERAN_CORE_ERPIndex
+% 2 MMN_ERPIndex
+% 3 ERAN_RIGHT_ERPIndex
+% 4 N5_CENTRAL_ERPIndex
+%
+% 9 ERAN_CORE_ERAN_B_MinPeak
+% 10 MMN_ERAN_B_MinPeak
+%% ============================================================
+
+keepIdx = [1 2 3 4 9 10];
+
+DatasetOut = ERPINF_Dataset;
+
+for iTr = 1:numel(DatasetOut.trials)
+
+    DatasetOut.trials(iTr).ERPINF = ...
+        DatasetOut.trials(iTr).ERPINF(keepIdx);
+
+    DatasetOut.trials(iTr).timeERPINF = ...
+        1:numel(keepIdx);
+
+end
+
+DatasetOut.FeatureNames = ...
+    DatasetOut.FeatureNames(keepIdx);
+
+DatasetOut.nFeatures = ...
+    numel(keepIdx);
+
+%% ============================================================
+% CHECK
+%% ============================================================
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('ERPINDEX + MINPEAK DATASET\n');
+fprintf('================================\n');
+
+fprintf('Features kept : %d\n', ...
+    DatasetOut.nFeatures);
+
+disp(DatasetOut.FeatureNames(:))
+
+%% ============================================================
+% SAVE
+%% ============================================================
+
+save( ...
+    fullfile( ...
+    indir,...
+    'ERPINF_Dataset_ERPINDEX_MINPEAK.mat'),...
+    'DatasetOut',...
+    '-v7.3');
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('DATASET SAVED\n');
+fprintf('================================\n');
+
+==============================
+FILE: OLD_STEP10G_CREATE_CONTROL_FEATURE_SUBSETS.m
+==============================
+
+%% =========================================================================
+% STEP10G_CREATE_CONTROL_FEATURE_SUBSETS
+%% =========================================================================
+
+clear
+close all
+clc
+
+
+%% ============================================================
+% MODE
+%% ============================================================
+
+useSubEpoch = true;
+
+%% ============================================================
+% PATHS
+%% ============================================================
+
+step2_indir = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
+
+if useSubEpoch
+    indir = fullfile( ...
+        step2_indir,...
+        'STEP10H_CONTROL_DATASETS_SUBEPOCH');
+    suffix = '_SUBEPOCH';
+else 
+    indir = fullfile( ...
+        step2_indir,...
+        'STEP10F_CONTROL_DATASETS');
+    suffix = '';
+end
+
+%% ============================================================
+% FILES
+%% ============================================================
+
+files = dir( ...
+    fullfile(indir,...
+    '*_FULL.mat'));
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('FEATURE SUBSET CREATION\n');
+fprintf('================================\n');
+fprintf('Datasets found : %d\n', ...
+    numel(files));
+fprintf('Mode : ');
+if useSubEpoch
+    fprintf('SUBEPOCH\n');
+else
+    fprintf('TRIAL\n');
+end
+%% ============================================================
+% LOOP DATASETS
+%% ============================================================
+
+for iFile = 1:numel(files)
+
+    fprintf('\n');
+    fprintf('--------------------------------\n');
+    fprintf('DATASET %d/%d\n', ...
+        iFile,...
+        numel(files));
+    fprintf('%s\n', ...
+        files(iFile).name);
+
+    %% ========================================================
+    % LOAD
+    %% ========================================================
+
+    S = load( ...
+        fullfile( ...
+        files(iFile).folder,...
+        files(iFile).name));
+
+    ERPINF_Dataset = ...
+        S.ERPINF_Dataset;
+
+    FeatureNames = ...
+        ERPINF_Dataset.FeatureNames;
+
+    %% ========================================================
+    % FEATURE MAP
+    %% ========================================================
+
+    ERPINDEX_idx = 1:4;
+
+    ERPINDEX_ERANB_idx = ...
+        1:10;
+
+    ERPINDEX_MINPEAK_idx = ...
+        [1 2 3 4 9 10];
+
+    FULL_idx = ...
+        1:numel(FeatureNames);
+
+    %% ========================================================
+    % BASENAME
+    %% ========================================================
+
+    baseName = ...
+        erase( ...
+        files(iFile).name,...
+        '_FULL.mat');
+
+    %% ========================================================
+    % ERPINDEX
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_idx,...
+        fullfile( ...
+        indir,...
+        sprintf('%s_ERPINDEX%s.mat', ...
+        baseName,...
+        suffix)));
+
+    %% ========================================================
+    % ERPINDEX + ERANB
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_ERANB_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_ERPINDEX_ERANB%s.mat',...
+        baseName,...
+        suffix)));
+
+    %% ========================================================
+    % ERPINDEX + MINPEAK
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_MINPEAK_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_ERPINDEX_MINPEAK%s.mat',...
+        baseName,...
+        suffix)));
+
+    %% ========================================================
+    % FULL
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        FULL_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_FULLCOPY%s.mat',...
+        baseName,...
+        suffix)));
+
+end
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('ALL FEATURE SUBSETS CREATED\n');
+fprintf('================================\n');
+
+%% =========================================================================
+% LOCAL FUNCTION
+%% =========================================================================
+
+function create_subset_dataset( ...
+    ERPINF_Dataset,...
+    keepIdx,...
+    saveFile)
+
+DatasetOut = ...
+    ERPINF_Dataset;
+
+for iTr = 1:numel(DatasetOut.trials)
+
+    DatasetOut.trials(iTr).ERPINF = ...
+        DatasetOut.trials(iTr).ERPINF(keepIdx);
+
+    DatasetOut.trials(iTr).timeERPINF = ...
+        1:numel(keepIdx);
+
+end
+
+DatasetOut.FeatureNames = ...
+    DatasetOut.FeatureNames(keepIdx);
+
+DatasetOut.nFeatures = ...
+    numel(keepIdx);
+
+fprintf('\n');
+fprintf('%s\n', ...
+    saveFile);
+
+fprintf('Features kept : %d\n', ...
+    DatasetOut.nFeatures);
+
+save( ...
+    saveFile,...
+    'DatasetOut',...
+    '-v7.3');
+
+end
+
+==============================
+FILE: OLD_STEP10H_BUILD_ERPINF_SUBEPOCH_DATASETS.m
+==============================
+
+%% =========================================================================
+% STEP10H_BUILD_ERPINF_SUBEPOCH_DATASETS
+% STEP10H_BUILD_CONTROL_DATASETS_SUBEPOCH
+%% =========================================================================
+
+clear
+close all
+clc
+
+origState = ...
+    get(0,'DefaultFigureVisible');
+
+set(0,'DefaultFigureVisible','off');
+
+disable_eeglab();
+
+%% ============================================================
+% LOAD DATA
+%% ============================================================
+
+step2_indir = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
+
+load( ...
+    fullfile( ...
+    step2_indir,...
+    'subj_list.mat'));
+
+%% ============================================================
+% OUTPUT
+%% ============================================================
+
+outdir = ...
+    fullfile( ...
+    step2_indir,...
+    'STEP10H_CONTROL_DATASETS_SUBEPOCH');
+
+if ~exist(outdir,'dir')
+
+    mkdir(outdir);
+
+end
+
+%% ============================================================
+% CASES
+%% ============================================================
+
+Cases = struct();
+
+%% ------------------------------------------------------------
+% CASE 1
+%% ------------------------------------------------------------
+
+Cases(1).name = ...
+    'CD';
+
+Cases(1).class_labels = { ...
+    'Consonant',...
+    'Dissonant'};
+
+Cases(1).class_codes = ...
+    [7 8];
+
+%% ------------------------------------------------------------
+% CASE 2
+%% ------------------------------------------------------------
+
+Cases(2).name = ...
+    'CON_CONTROL';
+
+Cases(2).class_labels = { ...
+    'Consonant',...
+    'ControlGOAL'};
+
+Cases(2).class_codes = ...
+    [7 3];
+
+%% ------------------------------------------------------------
+% CASE 3
+%% ------------------------------------------------------------
+
+Cases(3).name = ...
+    'DIS_CONTROL';
+
+Cases(3).class_labels = { ...
+    'Dissonant',...
+    'ControlGOAL'};
+
+Cases(3).class_codes = ...
+    [8 3];
+
+%% ------------------------------------------------------------
+% CASE 4
+%% ------------------------------------------------------------
+
+Cases(4).name = ...
+    'CD_CONTROL';
+
+Cases(4).class_labels = { ...
+    'Consonant',...
+    'Dissonant',...
+    'ControlGOAL'};
+
+Cases(4).class_codes = ...
+    [7 8 3];
+
+%% ============================================================
+% LOOP
+%% ============================================================
+
+for iCase = 1:numel(Cases)
+
+    CaseCfg = Cases(iCase);
+
+    fprintf('\n');
+    fprintf('================================\n');
+    fprintf('CASE : %s\n', ...
+        CaseCfg.name);
+    fprintf('================================\n');
+
+    %% ========================================================
+    % CONFIG
+    %% ========================================================
+
+    cfgINF = struct();
+
+    cfgINF.class_labels = ...
+        CaseCfg.class_labels;
+
+    cfgINF.class_codes = ...
+        CaseCfg.class_codes;
+
+    cfgINF.analysis_window = ...
+        [-0.5 1.0];
+
+    cfgINF.eventField = ...
+        'eventLabel';
+
+    cfgINF.subjectField = ...
+        'subj_id';
+
+    %% --------------------------------------------------------
+    % SUBEPOCHS
+    %% --------------------------------------------------------
+
+    cfgINF.useSubEpochs = true;
+
+    cfgINF.subEpochLength = ...
+        0.075;
+
+    cfgINF.subEpochOverlap = ...
+        50;
+
+    %% --------------------------------------------------------
+    % ROI
+    %% --------------------------------------------------------
+
+    MAIN_ROI
+
+    cfgINF.rois = ROI;
+
+    %% ========================================================
+    % BUILD DATASET
+    %% ========================================================
+
+    ERPINF_Dataset = ...
+        build_bandpower_dataset( ...
+        subj_list,...
+        cfgINF);
+    %% ========================================================
+    % COMPATIBILITY WITH epochCompute
+    %% ========================================================
+
+    for iTr = 1:numel(ERPINF_Dataset.trials)
+
+        ERPINF_Dataset.trials(iTr).timeeeg = ...
+            ERPINF_Dataset.trials(iTr).time;
+
+    end
+    %% ========================================================
+    % SUBEPOCHING
+    %% ========================================================
+
+    if cfgINF.useSubEpochs
+
+        parEpoch = ...
+            epochComputeParams();
+
+        parEpoch.InField = ...
+            'eeg';
+
+        parEpoch.OutField = ...
+            'eeg';
+
+        parEpoch.fample = ...
+            ERPINF_Dataset.srate;
+
+        parEpoch.t_epoch = ...
+            cfgINF.subEpochLength;
+
+        parEpoch.overlap_percent = ...
+            cfgINF.subEpochOverlap;
+
+        [ERPINF_Dataset.trials,~] = ...
+            epochCompute( ...
+            ERPINF_Dataset.trials,...
+            parEpoch);
+
+        parMulti = struct();
+
+        parMulti.Infield = ...
+            'eeg';
+
+        ERPINF_Dataset.trials = ...
+            multiEEG( ...
+            ERPINF_Dataset.trials,...
+            parMulti);
+
+        fprintf('\n');
+        fprintf('================================\n');
+        fprintf('SUBEPOCHING\n');
+        fprintf('================================\n');
+
+        fprintf('Length  : %.3f s\n', ...
+            cfgINF.subEpochLength);
+
+        fprintf('Overlap : %.1f %%\n', ...
+            cfgINF.subEpochOverlap);
+
+        fprintf('Trials after subepoching : %d\n', ...
+            numel(ERPINF_Dataset.trials));
+
+    end
+
+    %% ========================================================
+    % FEATURE EXTRACTION
+    %% ========================================================
+
+    fprintf('\n');
+    fprintf('COMPUTING FEATURES...\n');
+
+    nTrials = ...
+        numel(ERPINF_Dataset.trials);
+
+    for iTr = 1:nTrials
+
+        if mod(iTr,100)==0
+
+            fprintf( ...
+                'Trial %d / %d\n',...
+                iTr,...
+                nTrials);
+
+        end
+
+        tr = ...
+            ERPINF_Dataset.trials(iTr);
+
+        [tmp,FeatureNames] = ...
+            compute_erp_informed_features( ...
+            tr,...
+            cfgINF,...
+            'ERPINF');
+
+        ERPINF_Dataset.trials(iTr).ERPINF = ...
+            tmp.ERPINF;
+
+        ERPINF_Dataset.trials(iTr).timeERPINF = ...
+            tmp.timeERPINF;
+
+    end
+
+    %% ========================================================
+    % METADATA
+    %% ========================================================
+
+    ERPINF_Dataset.FeatureNames = ...
+        FeatureNames;
+
+    ERPINF_Dataset.nFeatures = ...
+        numel(FeatureNames);
+
+    %% ========================================================
+    % SUMMARY
+    %% ========================================================
+
+    fprintf('\n');
+    fprintf('Trials    : %d\n', ...
+        numel(ERPINF_Dataset.trials));
+
+    fprintf('Features  : %d\n', ...
+        ERPINF_Dataset.nFeatures);
+
+    %% ========================================================
+    % SAVE
+    %% ========================================================
+
+    saveName = sprintf( ...
+        'ERPINF_Dataset_%s_FULL.mat',...
+        CaseCfg.name);
+
+    save( ...
+        fullfile( ...
+        outdir,...
+        saveName),...
+        'ERPINF_Dataset',...
+        'cfgINF',...
+        '-v7.3');
+
+    fprintf('\n');
+    fprintf('Saved : %s\n', ...
+        saveName);
+
+end
+
+%% ============================================================
+% END
+%% ============================================================
+
+set(0,'DefaultFigureVisible',origState);
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('ALL SUBEPOCH DATASETS CREATED\n');
+fprintf('================================\n');
+
+==============================
 FILE: OLD_STEP4C_SPECTROGRAM.m
 ==============================
 
@@ -1861,6 +2507,200 @@ unique({data_trials.eventLabel})
 tabulate({data_trials.eventLabel}')
 
 ==============================
+FILE: STEOLD_P10I_CREATE_CONTROL_FEATURE_SUBSETS_SUBEPOCH.m
+==============================
+
+%% =========================================================================
+% STEP10I_CREATE_CONTROL_FEATURE_SUBSETS_SUBEPOCH
+%% =========================================================================
+
+clear
+close all
+clc
+
+%% ============================================================
+% PATHS
+%% ============================================================
+
+step2_indir = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
+
+indir = fullfile( ...
+    step2_indir,...
+    'STEP10H_CONTROL_DATASETS_SUBEPOCH');
+
+%% ============================================================
+% FILES
+%% ============================================================
+
+files = dir( ...
+    fullfile(indir,...
+    '*_FULL.mat'));
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('SUBEPOCH FEATURE SUBSET CREATION\n');
+fprintf('================================\n');
+fprintf('Datasets found : %d\n', ...
+    numel(files));
+
+%% ============================================================
+% LOOP DATASETS
+%% ============================================================
+
+for iFile = 1:numel(files)
+
+    fprintf('\n');
+    fprintf('--------------------------------\n');
+    fprintf('DATASET %d/%d\n', ...
+        iFile,...
+        numel(files));
+
+    fprintf('%s\n', ...
+        files(iFile).name);
+
+    %% ========================================================
+    % LOAD
+    %% ========================================================
+
+    S = load( ...
+        fullfile( ...
+        files(iFile).folder,...
+        files(iFile).name));
+
+    ERPINF_Dataset = ...
+        S.ERPINF_Dataset;
+
+    FeatureNames = ...
+        ERPINF_Dataset.FeatureNames;
+
+    %% ========================================================
+    % FEATURE MAP
+    %% ========================================================
+
+    ERPINDEX_idx = ...
+        1:4;
+
+    ERPINDEX_ERANB_idx = ...
+        1:10;
+
+    ERPINDEX_MINPEAK_idx = ...
+        [1 2 3 4 9 10];
+
+    FULL_idx = ...
+        1:numel(FeatureNames);
+
+    %% ========================================================
+    % BASENAME
+    %% ========================================================
+
+    baseName = ...
+        erase( ...
+        files(iFile).name,...
+        '_FULL.mat');
+
+    %% ========================================================
+    % ERPINDEX
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_ERPINDEX_SUBEPOCH.mat',...
+        baseName)));
+
+    %% ========================================================
+    % ERPINDEX + ERANB
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_ERANB_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_ERPINDEX_ERANB_SUBEPOCH.mat',...
+        baseName)));
+
+    %% ========================================================
+    % ERPINDEX + MINPEAK
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        ERPINDEX_MINPEAK_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_ERPINDEX_MINPEAK_SUBEPOCH.mat',...
+        baseName)));
+
+    %% ========================================================
+    % FULL COPY
+    %% ========================================================
+
+    create_subset_dataset( ...
+        ERPINF_Dataset,...
+        FULL_idx,...
+        fullfile( ...
+        indir,...
+        sprintf( ...
+        '%s_FULLCOPY_SUBEPOCH.mat',...
+        baseName)));
+
+end
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('ALL SUBEPOCH FEATURE SUBSETS CREATED\n');
+fprintf('================================\n');
+
+%% =========================================================================
+% LOCAL FUNCTION
+%% =========================================================================
+
+function create_subset_dataset( ...
+    ERPINF_Dataset,...
+    keepIdx,...
+    saveFile)
+
+DatasetOut = ...
+    ERPINF_Dataset;
+
+for iTr = 1:numel(DatasetOut.trials)
+
+    DatasetOut.trials(iTr).ERPINF = ...
+        DatasetOut.trials(iTr).ERPINF(keepIdx);
+
+    DatasetOut.trials(iTr).timeERPINF = ...
+        1:numel(keepIdx);
+
+end
+
+DatasetOut.FeatureNames = ...
+    DatasetOut.FeatureNames(keepIdx);
+
+DatasetOut.nFeatures = ...
+    numel(keepIdx);
+
+fprintf('\n');
+fprintf('%s\n', ...
+    saveFile);
+
+fprintf('Features kept : %d\n', ...
+    DatasetOut.nFeatures);
+
+save( ...
+    saveFile,...
+    'DatasetOut',...
+    '-v7.3');
+
+end
+
+==============================
 FILE: STEP0A_CREATE_CONTINUOUS_SUBJECTS.m
 ==============================
 
@@ -2150,6 +2990,82 @@ tabulate(eventCodes)
 save(outputFile,'y','-v7.3');
 
 fprintf('DONE\n');
+
+==============================
+FILE: STEP10A2_FEATURE_DISCOVER_SUBSETS.m
+==============================
+
+%% =========================================================================
+% STEP10A2_FEATURE_DISCOVER_SUBSETS
+%% =========================================================================
+
+clear
+close all
+clc
+
+%% ============================================================
+% PATHS
+%% ============================================================
+
+step2_indir = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\Dataset_MARCO\';
+
+indir = fullfile( ...
+    step2_indir,...
+    'STEP10A1_ERPINF_DATASET');
+
+load( ...
+    fullfile( ...
+    indir,...
+    'ERPINF_Dataset_CACHED.mat'));
+
+%% ============================================================
+% FEATURE NAMES
+%% ============================================================
+
+FeatureNames = ...
+    ERPINF_Dataset.FeatureNames;
+
+disp('FEATURES')
+disp(FeatureNames(:))
+
+%% ============================================================
+% SUBSET DEFINITIONS
+%% ============================================================
+
+ERPINDEX_idx = 1:4;
+
+ERPINDEX_ERANB_idx = 1:10;
+
+FULL_idx = ...
+    1:numel(FeatureNames);
+
+%% ============================================================
+% CREATE DATASETS
+%% ============================================================
+
+create_subset_dataset( ...
+    ERPINF_Dataset,...
+    ERPINDEX_idx,...
+    fullfile(indir,...
+    'ERPINF_Dataset_ERPINDEX.mat'));
+
+create_subset_dataset( ...
+    ERPINF_Dataset,...
+    ERPINDEX_ERANB_idx,...
+    fullfile(indir,...
+    'ERPINF_Dataset_ERPINDEX_ERANB.mat'));
+
+create_subset_dataset( ...
+    ERPINF_Dataset,...
+    FULL_idx,...
+    fullfile(indir,...
+    'ERPINF_Dataset_FULL.mat'));
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('FEATURE SUBSETS CREATED\n');
+fprintf('================================\n');
 
 ==============================
 FILE: STEP10A_FEATURE_DISCOVERY.m
@@ -2687,184 +3603,260 @@ fprintf('STEP10A RUN3 COMPLETED\n');
 fprintf('================================\n');
 
 ==============================
-FILE: STEP10BB_CREATE_ERPINDEX_MINPEAK.m
+FILE: STEP10B_BUILD_ERPINF_DATASETS.m
 ==============================
 
 %% =========================================================================
-% STEP10BB_CREATE_ERPINDEX_MINPEAK
+% STEP10B_BUILD_ERPINF_DATASETS
+% STEP10F_BUILD_ERPINF_DATASETS
+% STEP10F_BUILD_CONTROL_DATASETS
 %% =========================================================================
 
 clear
 close all
 clc
 
+origState = ...
+    get(0,'DefaultFigureVisible');
+
+set(0,'DefaultFigureVisible','off');
+
+disable_eeglab();
+
 %% ============================================================
-% PATHS
+% LOAD DATA
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
-
-indir = fullfile( ...
-    step2_indir,...
-    'STEP10BA_ERPINF_DATASET');
-
-%% ============================================================
-% LOAD FULL DATASET
-%% ============================================================
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load( ...
     fullfile( ...
-    indir,...
-    'ERPINF_Dataset_CACHED.mat'));
+    step2_indir,...
+    'subj_list.mat'));
 
 %% ============================================================
-% FEATURES
+% OUTPUT
 %% ============================================================
 
-disp('AVAILABLE FEATURES')
-disp(ERPINF_Dataset.FeatureNames(:))
+outdir = ...
+    fullfile( ...
+    step2_indir,...
+    'STEP10F_CONTROL_DATASETS');
+
+if ~exist(outdir,'dir')
+    mkdir(outdir);
+end
 
 %% ============================================================
-% KEEP FEATURES
-%%
-% 1 ERAN_CORE_ERPIndex
-% 2 MMN_ERPIndex
-% 3 ERAN_RIGHT_ERPIndex
-% 4 N5_CENTRAL_ERPIndex
-%
-% 9 ERAN_CORE_ERAN_B_MinPeak
-% 10 MMN_ERAN_B_MinPeak
+% CASES
 %% ============================================================
 
-keepIdx = [1 2 3 4 9 10];
+Cases = struct();
 
-DatasetOut = ERPINF_Dataset;
+%% ------------------------------------------------------------
+% CASE 1
+%% ------------------------------------------------------------
 
-for iTr = 1:numel(DatasetOut.trials)
+Cases(1).name = ...
+    'CD';
 
-    DatasetOut.trials(iTr).ERPINF = ...
-        DatasetOut.trials(iTr).ERPINF(keepIdx);
+Cases(1).class_labels = { ...
+    'Consonant',...
+    'Dissonant'};
 
-    DatasetOut.trials(iTr).timeERPINF = ...
-        1:numel(keepIdx);
+Cases(1).class_codes = ...
+    [7 8];
+
+%% ------------------------------------------------------------
+% CASE 2
+%% ------------------------------------------------------------
+
+Cases(2).name = ...
+    'CON_CONTROL';
+
+Cases(2).class_labels = { ...
+    'Consonant',...
+    'ControlGOAL'};
+
+Cases(2).class_codes = ...
+    [7 3];
+
+%% ------------------------------------------------------------
+% CASE 3
+%% ------------------------------------------------------------
+
+Cases(3).name = ...
+    'DIS_CONTROL';
+
+Cases(3).class_labels = { ...
+    'Dissonant',...
+    'ControlGOAL'};
+
+Cases(3).class_codes = ...
+    [8 3];
+
+%% ------------------------------------------------------------
+% CASE 4
+%% ------------------------------------------------------------
+
+Cases(4).name = ...
+    'CD_CONTROL';
+
+Cases(4).class_labels = { ...
+    'Consonant',...
+    'Dissonant',...
+    'ControlGOAL'};
+
+Cases(4).class_codes = ...
+    [7 8 3];
+
+%% ============================================================
+% LOOP
+%% ============================================================
+
+for iCase = 1:numel(Cases)
+
+    CaseCfg = Cases(iCase);
+
+    fprintf('\n');
+    fprintf('================================\n');
+    fprintf('CASE : %s\n', ...
+        CaseCfg.name);
+    fprintf('================================\n');
+
+    %% ========================================================
+    % CONFIG
+    %% ========================================================
+
+    cfgINF = struct();
+
+    cfgINF.class_labels = ...
+        CaseCfg.class_labels;
+
+    cfgINF.class_codes = ...
+        CaseCfg.class_codes;
+
+    cfgINF.analysis_window = ...
+        [-0.5 1.0];
+
+    cfgINF.eventField = ...
+        'eventLabel';
+
+    cfgINF.subjectField = ...
+        'subj_id';
+
+    MAIN_ROI
+
+    cfgINF.rois = ROI;
+
+    %% ========================================================
+    % BUILD DATASET
+    %% ========================================================
+
+    ERPINF_Dataset = ...
+        build_bandpower_dataset( ...
+        subj_list,...
+        cfgINF);
+
+    %% ========================================================
+    % FEATURE EXTRACTION
+    %% ========================================================
+
+    fprintf('\n');
+    fprintf('COMPUTING FEATURES...\n');
+
+    nTrials = ...
+        numel(ERPINF_Dataset.trials);
+
+    for iTr = 1:nTrials
+
+        if mod(iTr,100)==0
+
+            fprintf( ...
+                'Trial %d / %d\n',...
+                iTr,...
+                nTrials);
+
+        end
+
+        tr = ...
+            ERPINF_Dataset.trials(iTr);
+
+        [tmp,FeatureNames] = ...
+            compute_erp_informed_features( ...
+            tr,...
+            cfgINF,...
+            'ERPINF');
+
+        ERPINF_Dataset.trials(iTr).ERPINF = ...
+            tmp.ERPINF;
+
+        ERPINF_Dataset.trials(iTr).timeERPINF = ...
+            tmp.timeERPINF;
+
+    end
+
+    %% ========================================================
+    % METADATA
+    %% ========================================================
+
+    ERPINF_Dataset.FeatureNames = ...
+        FeatureNames;
+
+    ERPINF_Dataset.nFeatures = ...
+        numel(FeatureNames);
+
+    %% ========================================================
+    % SUMMARY
+    %% ========================================================
+
+    fprintf('\n');
+
+    fprintf('Trials    : %d\n', ...
+        ERPINF_Dataset.nTrials);
+
+    fprintf('Subjects  : %d\n', ...
+        ERPINF_Dataset.nSubjects);
+
+    fprintf('Features  : %d\n', ...
+        ERPINF_Dataset.nFeatures);
+
+    %% ========================================================
+    % SAVE
+    %% ========================================================
+
+    saveName = sprintf( ...
+        'ERPINF_Dataset_%s_FULL.mat',...
+        CaseCfg.name);
+
+    save( ...
+        fullfile( ...
+        outdir,...
+        saveName),...
+        'ERPINF_Dataset',...
+        'cfgINF',...
+        '-v7.3');
+
+    fprintf('\n');
+    fprintf('Saved : %s\n', ...
+        saveName);
 
 end
 
-DatasetOut.FeatureNames = ...
-    DatasetOut.FeatureNames(keepIdx);
-
-DatasetOut.nFeatures = ...
-    numel(keepIdx);
-
 %% ============================================================
-% CHECK
+% END
 %% ============================================================
+
+set(0,'DefaultFigureVisible',origState);
 
 fprintf('\n');
 fprintf('================================\n');
-fprintf('ERPINDEX + MINPEAK DATASET\n');
-fprintf('================================\n');
-
-fprintf('Features kept : %d\n', ...
-    DatasetOut.nFeatures);
-
-disp(DatasetOut.FeatureNames(:))
-
-%% ============================================================
-% SAVE
-%% ============================================================
-
-save( ...
-    fullfile( ...
-    indir,...
-    'ERPINF_Dataset_ERPINDEX_MINPEAK.mat'),...
-    'DatasetOut',...
-    '-v7.3');
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('DATASET SAVED\n');
+fprintf('ALL CONTROL DATASETS CREATED\n');
 fprintf('================================\n');
 
 ==============================
-FILE: STEP10BB_CREATE_FEATURE_SUBSETS.m
-==============================
-
-%% =========================================================================
-% STEP10BB_CREATE_FEATURE_SUBSETS
-%% =========================================================================
-
-clear
-close all
-clc
-
-%% ============================================================
-% PATHS
-%% ============================================================
-
-step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
-
-indir = fullfile( ...
-    step2_indir,...
-    'STEP10BA_ERPINF_DATASET');
-
-load( ...
-    fullfile( ...
-    indir,...
-    'ERPINF_Dataset_CACHED.mat'));
-
-%% ============================================================
-% FEATURE NAMES
-%% ============================================================
-
-FeatureNames = ...
-    ERPINF_Dataset.FeatureNames;
-
-disp('FEATURES')
-disp(FeatureNames(:))
-
-%% ============================================================
-% SUBSET DEFINITIONS
-%% ============================================================
-
-ERPINDEX_idx = 1:4;
-
-ERPINDEX_ERANB_idx = 1:10;
-
-FULL_idx = ...
-    1:numel(FeatureNames);
-
-%% ============================================================
-% CREATE DATASETS
-%% ============================================================
-
-create_subset_dataset( ...
-    ERPINF_Dataset,...
-    ERPINDEX_idx,...
-    fullfile(indir,...
-    'ERPINF_Dataset_ERPINDEX.mat'));
-
-create_subset_dataset( ...
-    ERPINF_Dataset,...
-    ERPINDEX_ERANB_idx,...
-    fullfile(indir,...
-    'ERPINF_Dataset_ERPINDEX_ERANB.mat'));
-
-create_subset_dataset( ...
-    ERPINF_Dataset,...
-    FULL_idx,...
-    fullfile(indir,...
-    'ERPINF_Dataset_FULL.mat'));
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('FEATURE SUBSETS CREATED\n');
-fprintf('================================\n');
-
-==============================
-FILE: STEP10B_ERP_INFORMED_LOSO.m
+FILE: STEP10C_ERP_INFORMED_LOSO.m
 ==============================
 
 %% =========================================================================
@@ -2964,6 +3956,7 @@ end
 %% ============================================================
 % LOAD DATASET
 %% ============================================================
+
 % STEP 1
 % load( ...
 %     fullfile( ...
@@ -3026,17 +4019,17 @@ end
 %     fullfile(outdir,'ERPINDEX_MINPEAK');
 % 
 
-load( ...
-    fullfile( ...
-    step2_indir,...
-    'STEP10BA_ERPINF_DATASET',...
-    'ERPINF_Dataset_ERPINDEX_ERANB.mat'));
-
-ERPINF_Dataset = DatasetOut;
-
-outdir = ...
-    fullfile(outdir,'ERPINDEX_ERANB');
+% load( ...
+%     fullfile( ...
+%     step2_indir,...
+%     'STEP10BA_ERPINF_DATASET',...
+%     'ERPINF_Dataset_ERPINDEX_ERANB.mat'));
 % 
+% ERPINF_Dataset = DatasetOut;
+% 
+% outdir = ...
+%     fullfile(outdir,'ERPINDEX_ERANB');
+% % 
 
 
 % load( ...
@@ -3213,6 +4206,7 @@ for iClf = 1:numel(cfgINF.classifiers)
             split_loso_trials( ...
             ERPINF_Dataset,...
             testSubject);
+        
         if cfgINF.useZScore
 
             Xtrain = vertcat(TrainTrials.ERPINF);
@@ -4227,769 +5221,6 @@ set(0,'DefaultFigureVisible',origState);
 fprintf('\n');
 fprintf('================================\n');
 fprintf('STEP10C ERP INFORMED TRIALWISE COMPLETED\n');
-fprintf('================================\n');
-
-==============================
-FILE: STEP10F_BUILD_CONTROL_DATASETS.m
-==============================
-
-%% =========================================================================
-% STEP10F_BUILD_CONTROL_DATASETS
-%% =========================================================================
-
-clear
-close all
-clc
-
-origState = ...
-    get(0,'DefaultFigureVisible');
-
-set(0,'DefaultFigureVisible','off');
-
-disable_eeglab();
-
-%% ============================================================
-% LOAD DATA
-%% ============================================================
-
-step2_indir = ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
-
-load( ...
-    fullfile( ...
-    step2_indir,...
-    'subj_list.mat'));
-
-%% ============================================================
-% OUTPUT
-%% ============================================================
-
-outdir = ...
-    fullfile( ...
-    step2_indir,...
-    'STEP10F_CONTROL_DATASETS');
-
-if ~exist(outdir,'dir')
-    mkdir(outdir);
-end
-
-%% ============================================================
-% CASES
-%% ============================================================
-
-Cases = struct();
-
-%% ------------------------------------------------------------
-% CASE 1
-%% ------------------------------------------------------------
-
-Cases(1).name = ...
-    'CD';
-
-Cases(1).class_labels = { ...
-    'Consonant',...
-    'Dissonant'};
-
-Cases(1).class_codes = ...
-    [7 8];
-
-%% ------------------------------------------------------------
-% CASE 2
-%% ------------------------------------------------------------
-
-Cases(2).name = ...
-    'CON_CONTROL';
-
-Cases(2).class_labels = { ...
-    'Consonant',...
-    'ControlGOAL'};
-
-Cases(2).class_codes = ...
-    [7 3];
-
-%% ------------------------------------------------------------
-% CASE 3
-%% ------------------------------------------------------------
-
-Cases(3).name = ...
-    'DIS_CONTROL';
-
-Cases(3).class_labels = { ...
-    'Dissonant',...
-    'ControlGOAL'};
-
-Cases(3).class_codes = ...
-    [8 3];
-
-%% ------------------------------------------------------------
-% CASE 4
-%% ------------------------------------------------------------
-
-Cases(4).name = ...
-    'CD_CONTROL';
-
-Cases(4).class_labels = { ...
-    'Consonant',...
-    'Dissonant',...
-    'ControlGOAL'};
-
-Cases(4).class_codes = ...
-    [7 8 3];
-
-%% ============================================================
-% LOOP
-%% ============================================================
-
-for iCase = 1:numel(Cases)
-
-    CaseCfg = Cases(iCase);
-
-    fprintf('\n');
-    fprintf('================================\n');
-    fprintf('CASE : %s\n', ...
-        CaseCfg.name);
-    fprintf('================================\n');
-
-    %% ========================================================
-    % CONFIG
-    %% ========================================================
-
-    cfgINF = struct();
-
-    cfgINF.class_labels = ...
-        CaseCfg.class_labels;
-
-    cfgINF.class_codes = ...
-        CaseCfg.class_codes;
-
-    cfgINF.analysis_window = ...
-        [-0.5 1.0];
-
-    cfgINF.eventField = ...
-        'eventLabel';
-
-    cfgINF.subjectField = ...
-        'subj_id';
-
-    MAIN_ROI
-
-    cfgINF.rois = ROI;
-
-    %% ========================================================
-    % BUILD DATASET
-    %% ========================================================
-
-    ERPINF_Dataset = ...
-        build_bandpower_dataset( ...
-        subj_list,...
-        cfgINF);
-
-    %% ========================================================
-    % FEATURE EXTRACTION
-    %% ========================================================
-
-    fprintf('\n');
-    fprintf('COMPUTING FEATURES...\n');
-
-    nTrials = ...
-        numel(ERPINF_Dataset.trials);
-
-    for iTr = 1:nTrials
-
-        if mod(iTr,100)==0
-
-            fprintf( ...
-                'Trial %d / %d\n',...
-                iTr,...
-                nTrials);
-
-        end
-
-        tr = ...
-            ERPINF_Dataset.trials(iTr);
-
-        [tmp,FeatureNames] = ...
-            compute_erp_informed_features( ...
-            tr,...
-            cfgINF,...
-            'ERPINF');
-
-        ERPINF_Dataset.trials(iTr).ERPINF = ...
-            tmp.ERPINF;
-
-        ERPINF_Dataset.trials(iTr).timeERPINF = ...
-            tmp.timeERPINF;
-
-    end
-
-    %% ========================================================
-    % METADATA
-    %% ========================================================
-
-    ERPINF_Dataset.FeatureNames = ...
-        FeatureNames;
-
-    ERPINF_Dataset.nFeatures = ...
-        numel(FeatureNames);
-
-    %% ========================================================
-    % SUMMARY
-    %% ========================================================
-
-    fprintf('\n');
-
-    fprintf('Trials    : %d\n', ...
-        ERPINF_Dataset.nTrials);
-
-    fprintf('Subjects  : %d\n', ...
-        ERPINF_Dataset.nSubjects);
-
-    fprintf('Features  : %d\n', ...
-        ERPINF_Dataset.nFeatures);
-
-    %% ========================================================
-    % SAVE
-    %% ========================================================
-
-    saveName = sprintf( ...
-        'ERPINF_Dataset_%s_FULL.mat',...
-        CaseCfg.name);
-
-    save( ...
-        fullfile( ...
-        outdir,...
-        saveName),...
-        'ERPINF_Dataset',...
-        'cfgINF',...
-        '-v7.3');
-
-    fprintf('\n');
-    fprintf('Saved : %s\n', ...
-        saveName);
-
-end
-
-%% ============================================================
-% END
-%% ============================================================
-
-set(0,'DefaultFigureVisible',origState);
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('ALL CONTROL DATASETS CREATED\n');
-fprintf('================================\n');
-
-==============================
-FILE: STEP10G_CREATE_CONTROL_FEATURE_SUBSETS.m
-==============================
-
-%% =========================================================================
-% STEP10G_CREATE_CONTROL_FEATURE_SUBSETS
-%% =========================================================================
-
-clear
-close all
-clc
-
-%% ============================================================
-% PATHS
-%% ============================================================
-
-step2_indir = ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
-
-indir = fullfile( ...
-    step2_indir,...
-    'STEP10F_CONTROL_DATASETS');
-
-%% ============================================================
-% FILES
-%% ============================================================
-
-files = dir( ...
-    fullfile(indir,...
-    '*_FULL.mat'));
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('FEATURE SUBSET CREATION\n');
-fprintf('================================\n');
-fprintf('Datasets found : %d\n', ...
-    numel(files));
-
-%% ============================================================
-% LOOP DATASETS
-%% ============================================================
-
-for iFile = 1:numel(files)
-
-    fprintf('\n');
-    fprintf('--------------------------------\n');
-    fprintf('DATASET %d/%d\n', ...
-        iFile,...
-        numel(files));
-    fprintf('%s\n', ...
-        files(iFile).name);
-
-    %% ========================================================
-    % LOAD
-    %% ========================================================
-
-    S = load( ...
-        fullfile( ...
-        files(iFile).folder,...
-        files(iFile).name));
-
-    ERPINF_Dataset = ...
-        S.ERPINF_Dataset;
-
-    FeatureNames = ...
-        ERPINF_Dataset.FeatureNames;
-
-    %% ========================================================
-    % FEATURE MAP
-    %% ========================================================
-
-    ERPINDEX_idx = 1:4;
-
-    ERPINDEX_ERANB_idx = ...
-        1:10;
-
-    ERPINDEX_MINPEAK_idx = ...
-        [1 2 3 4 9 10];
-
-    FULL_idx = ...
-        1:numel(FeatureNames);
-
-    %% ========================================================
-    % BASENAME
-    %% ========================================================
-
-    baseName = ...
-        erase( ...
-        files(iFile).name,...
-        '_FULL.mat');
-
-    %% ========================================================
-    % ERPINDEX
-    %% ========================================================
-
-    create_subset_dataset( ...
-        ERPINF_Dataset,...
-        ERPINDEX_idx,...
-        fullfile( ...
-        indir,...
-        sprintf( ...
-        '%s_ERPINDEX.mat',...
-        baseName)));
-
-    %% ========================================================
-    % ERPINDEX + ERANB
-    %% ========================================================
-
-    create_subset_dataset( ...
-        ERPINF_Dataset,...
-        ERPINDEX_ERANB_idx,...
-        fullfile( ...
-        indir,...
-        sprintf( ...
-        '%s_ERPINDEX_ERANB.mat',...
-        baseName)));
-
-    %% ========================================================
-    % ERPINDEX + MINPEAK
-    %% ========================================================
-
-    create_subset_dataset( ...
-        ERPINF_Dataset,...
-        ERPINDEX_MINPEAK_idx,...
-        fullfile( ...
-        indir,...
-        sprintf( ...
-        '%s_ERPINDEX_MINPEAK.mat',...
-        baseName)));
-
-    %% ========================================================
-    % FULL
-    %% ========================================================
-
-    create_subset_dataset( ...
-        ERPINF_Dataset,...
-        FULL_idx,...
-        fullfile( ...
-        indir,...
-        sprintf( ...
-        '%s_FULLCOPY.mat',...
-        baseName)));
-
-end
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('ALL FEATURE SUBSETS CREATED\n');
-fprintf('================================\n');
-
-%% =========================================================================
-% LOCAL FUNCTION
-%% =========================================================================
-
-function create_subset_dataset( ...
-    ERPINF_Dataset,...
-    keepIdx,...
-    saveFile)
-
-DatasetOut = ...
-    ERPINF_Dataset;
-
-for iTr = 1:numel(DatasetOut.trials)
-
-    DatasetOut.trials(iTr).ERPINF = ...
-        DatasetOut.trials(iTr).ERPINF(keepIdx);
-
-    DatasetOut.trials(iTr).timeERPINF = ...
-        1:numel(keepIdx);
-
-end
-
-DatasetOut.FeatureNames = ...
-    DatasetOut.FeatureNames(keepIdx);
-
-DatasetOut.nFeatures = ...
-    numel(keepIdx);
-
-fprintf('\n');
-fprintf('%s\n', ...
-    saveFile);
-
-fprintf('Features kept : %d\n', ...
-    DatasetOut.nFeatures);
-
-save( ...
-    saveFile,...
-    'DatasetOut',...
-    '-v7.3');
-
-end
-
-==============================
-FILE: STEP10H_BUILD_CONTROL_DATASETS_SUBEPOCH.m
-==============================
-
-%% =========================================================================
-% STEP10H_BUILD_CONTROL_DATASETS_SUBEPOCH
-%% =========================================================================
-
-clear
-close all
-clc
-
-origState = ...
-    get(0,'DefaultFigureVisible');
-
-set(0,'DefaultFigureVisible','off');
-
-disable_eeglab();
-
-%% ============================================================
-% LOAD DATA
-%% ============================================================
-
-step2_indir = ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
-
-load( ...
-    fullfile( ...
-    step2_indir,...
-    'subj_list.mat'));
-
-%% ============================================================
-% OUTPUT
-%% ============================================================
-
-outdir = ...
-    fullfile( ...
-    step2_indir,...
-    'STEP10H_CONTROL_DATASETS_SUBEPOCH');
-
-if ~exist(outdir,'dir')
-
-    mkdir(outdir);
-
-end
-
-%% ============================================================
-% CASES
-%% ============================================================
-
-Cases = struct();
-
-%% ------------------------------------------------------------
-% CASE 1
-%% ------------------------------------------------------------
-
-Cases(1).name = ...
-    'CD';
-
-Cases(1).class_labels = { ...
-    'Consonant',...
-    'Dissonant'};
-
-Cases(1).class_codes = ...
-    [7 8];
-
-%% ------------------------------------------------------------
-% CASE 2
-%% ------------------------------------------------------------
-
-Cases(2).name = ...
-    'CON_CONTROL';
-
-Cases(2).class_labels = { ...
-    'Consonant',...
-    'ControlGOAL'};
-
-Cases(2).class_codes = ...
-    [7 3];
-
-%% ------------------------------------------------------------
-% CASE 3
-%% ------------------------------------------------------------
-
-Cases(3).name = ...
-    'DIS_CONTROL';
-
-Cases(3).class_labels = { ...
-    'Dissonant',...
-    'ControlGOAL'};
-
-Cases(3).class_codes = ...
-    [8 3];
-
-%% ------------------------------------------------------------
-% CASE 4
-%% ------------------------------------------------------------
-
-Cases(4).name = ...
-    'CD_CONTROL';
-
-Cases(4).class_labels = { ...
-    'Consonant',...
-    'Dissonant',...
-    'ControlGOAL'};
-
-Cases(4).class_codes = ...
-    [7 8 3];
-
-%% ============================================================
-% LOOP
-%% ============================================================
-
-for iCase = 1:numel(Cases)
-
-    CaseCfg = Cases(iCase);
-
-    fprintf('\n');
-    fprintf('================================\n');
-    fprintf('CASE : %s\n', ...
-        CaseCfg.name);
-    fprintf('================================\n');
-
-    %% ========================================================
-    % CONFIG
-    %% ========================================================
-
-    cfgINF = struct();
-
-    cfgINF.class_labels = ...
-        CaseCfg.class_labels;
-
-    cfgINF.class_codes = ...
-        CaseCfg.class_codes;
-
-    cfgINF.analysis_window = ...
-        [-0.5 1.0];
-
-    cfgINF.eventField = ...
-        'eventLabel';
-
-    cfgINF.subjectField = ...
-        'subj_id';
-
-    %% --------------------------------------------------------
-    % SUBEPOCHS
-    %% --------------------------------------------------------
-
-    cfgINF.useSubEpochs = true;
-
-    cfgINF.subEpochLength = ...
-        0.075;
-
-    cfgINF.subEpochOverlap = ...
-        50;
-
-    %% --------------------------------------------------------
-    % ROI
-    %% --------------------------------------------------------
-
-    MAIN_ROI
-
-    cfgINF.rois = ROI;
-
-    %% ========================================================
-    % BUILD DATASET
-    %% ========================================================
-
-    ERPINF_Dataset = ...
-        build_bandpower_dataset( ...
-        subj_list,...
-        cfgINF);
-
-    %% ========================================================
-    % SUBEPOCHING
-    %% ========================================================
-
-    if cfgINF.useSubEpochs
-
-        parEpoch = ...
-            epochComputeParams();
-
-        parEpoch.InField = ...
-            'eeg';
-
-        parEpoch.OutField = ...
-            'eeg';
-
-        parEpoch.fample = ...
-            ERPINF_Dataset.srate;
-
-        parEpoch.t_epoch = ...
-            cfgINF.subEpochLength;
-
-        parEpoch.overlap_percent = ...
-            cfgINF.subEpochOverlap;
-
-        [ERPINF_Dataset.trials,~] = ...
-            epochCompute( ...
-            ERPINF_Dataset.trials,...
-            parEpoch);
-
-        parMulti = struct();
-
-        parMulti.Infield = ...
-            'eeg';
-
-        ERPINF_Dataset.trials = ...
-            multiEEG( ...
-            ERPINF_Dataset.trials,...
-            parMulti);
-
-        fprintf('\n');
-        fprintf('================================\n');
-        fprintf('SUBEPOCHING\n');
-        fprintf('================================\n');
-
-        fprintf('Length  : %.3f s\n', ...
-            cfgINF.subEpochLength);
-
-        fprintf('Overlap : %.1f %%\n', ...
-            cfgINF.subEpochOverlap);
-
-        fprintf('Trials after subepoching : %d\n', ...
-            numel(ERPINF_Dataset.trials));
-
-    end
-
-    %% ========================================================
-    % FEATURE EXTRACTION
-    %% ========================================================
-
-    fprintf('\n');
-    fprintf('COMPUTING FEATURES...\n');
-
-    nTrials = ...
-        numel(ERPINF_Dataset.trials);
-
-    for iTr = 1:nTrials
-
-        if mod(iTr,100)==0
-
-            fprintf( ...
-                'Trial %d / %d\n',...
-                iTr,...
-                nTrials);
-
-        end
-
-        tr = ...
-            ERPINF_Dataset.trials(iTr);
-
-        [tmp,FeatureNames] = ...
-            compute_erp_informed_features( ...
-            tr,...
-            cfgINF,...
-            'ERPINF');
-
-        ERPINF_Dataset.trials(iTr).ERPINF = ...
-            tmp.ERPINF;
-
-        ERPINF_Dataset.trials(iTr).timeERPINF = ...
-            tmp.timeERPINF;
-
-    end
-
-    %% ========================================================
-    % METADATA
-    %% ========================================================
-
-    ERPINF_Dataset.FeatureNames = ...
-        FeatureNames;
-
-    ERPINF_Dataset.nFeatures = ...
-        numel(FeatureNames);
-
-    %% ========================================================
-    % SUMMARY
-    %% ========================================================
-
-    fprintf('\n');
-    fprintf('Trials    : %d\n', ...
-        numel(ERPINF_Dataset.trials));
-
-    fprintf('Features  : %d\n', ...
-        ERPINF_Dataset.nFeatures);
-
-    %% ========================================================
-    % SAVE
-    %% ========================================================
-
-    saveName = sprintf( ...
-        'ERPINF_Dataset_%s_FULL.mat',...
-        CaseCfg.name);
-
-    save( ...
-        fullfile( ...
-        outdir,...
-        saveName),...
-        'ERPINF_Dataset',...
-        'cfgINF',...
-        '-v7.3');
-
-    fprintf('\n');
-    fprintf('Saved : %s\n', ...
-        saveName);
-
-end
-
-%% ============================================================
-% END
-%% ============================================================
-
-set(0,'DefaultFigureVisible',origState);
-
-fprintf('\n');
-fprintf('================================\n');
-fprintf('ALL SUBEPOCH DATASETS CREATED\n');
 fprintf('================================\n');
 
 ==============================
@@ -12726,7 +12957,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 outputdirCASE = 'STEP9_FBCSP_LOSO';
 
 Cases = build_fbcsp_cases();
-numiCase = 19;
+numiCase = 20;
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));

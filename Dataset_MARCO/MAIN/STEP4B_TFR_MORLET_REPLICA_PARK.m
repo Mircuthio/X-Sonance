@@ -282,7 +282,7 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
-addpath(genpath('D:\eeglab2026.0.0\'))
+addpath(genpath('C:\Users\mirco\Desktop\eeglab2026.1.0\'))
 
 set(groot,...
     'defaultTextInterpreter','tex');
@@ -296,7 +296,7 @@ set(groot,...
 %% ============================================================
 step4_outroot = ...
     fullfile( ...
-    'D:\X-SONANCE\Dataset_MARCO',...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO',...
     'STEP4B_TFR_MORLET');
 
 if ~exist(step4_outroot,'dir')
@@ -306,7 +306,7 @@ end
 % LOAD DATA
 %% ============================================================
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 

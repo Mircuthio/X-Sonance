@@ -132,7 +132,7 @@ set(0,'DefaultFigureVisible','off');
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 
 if ~exist(step2_indir,'dir')
     error('STEP2 folder not found');
@@ -142,7 +142,7 @@ end
 %% ============================================================
 step4_outroot = ...
     fullfile( ...
-    'D:\X-SONANCE\Dataset_MARCO',...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO',...
     'STEP4A_BANDPOWER');
 
 if ~exist(step4_outroot,'dir')

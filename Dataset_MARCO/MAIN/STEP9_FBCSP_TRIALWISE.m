@@ -25,7 +25,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
 Cases = build_fbcsp_cases();
 
-numiCase = 20;
+numiCase = 18;
 for iCase = 1:numel(numiCase)
     try
 

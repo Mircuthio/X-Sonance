@@ -1,6 +1,7 @@
 %% =========================================================================
-% STEP10H_BUILD_ERPINF_SUBEPOCH_DATASETS
-% STEP10H_BUILD_CONTROL_DATASETS_SUBEPOCH
+% STEP10B_BUILD_ERPINF_DATASETS
+% STEP10F_BUILD_ERPINF_DATASETS
+% STEP10F_BUILD_CONTROL_DATASETS
 %% =========================================================================
 
 clear
@@ -33,12 +34,10 @@ load( ...
 outdir = ...
     fullfile( ...
     step2_indir,...
-    'STEP10H_CONTROL_DATASETS_SUBEPOCH');
+    'STEP10F_CONTROL_DATASETS');
 
 if ~exist(outdir,'dir')
-
     mkdir(outdir);
-
 end
 
 %% ============================================================
@@ -139,22 +138,6 @@ for iCase = 1:numel(Cases)
     cfgINF.subjectField = ...
         'subj_id';
 
-    %% --------------------------------------------------------
-    % SUBEPOCHS
-    %% --------------------------------------------------------
-
-    cfgINF.useSubEpochs = true;
-
-    cfgINF.subEpochLength = ...
-        0.075;
-
-    cfgINF.subEpochOverlap = ...
-        50;
-
-    %% --------------------------------------------------------
-    % ROI
-    %% --------------------------------------------------------
-
     MAIN_ROI
 
     cfgINF.rois = ROI;
@@ -167,61 +150,6 @@ for iCase = 1:numel(Cases)
         build_bandpower_dataset( ...
         subj_list,...
         cfgINF);
-
-    %% ========================================================
-    % SUBEPOCHING
-    %% ========================================================
-
-    if cfgINF.useSubEpochs
-
-        parEpoch = ...
-            epochComputeParams();
-
-        parEpoch.InField = ...
-            'eeg';
-
-        parEpoch.OutField = ...
-            'eeg';
-
-        parEpoch.fample = ...
-            ERPINF_Dataset.srate;
-
-        parEpoch.t_epoch = ...
-            cfgINF.subEpochLength;
-
-        parEpoch.overlap_percent = ...
-            cfgINF.subEpochOverlap;
-
-        [ERPINF_Dataset.trials,~] = ...
-            epochCompute( ...
-            ERPINF_Dataset.trials,...
-            parEpoch);
-
-        parMulti = struct();
-
-        parMulti.Infield = ...
-            'eeg';
-
-        ERPINF_Dataset.trials = ...
-            multiEEG( ...
-            ERPINF_Dataset.trials,...
-            parMulti);
-
-        fprintf('\n');
-        fprintf('================================\n');
-        fprintf('SUBEPOCHING\n');
-        fprintf('================================\n');
-
-        fprintf('Length  : %.3f s\n', ...
-            cfgINF.subEpochLength);
-
-        fprintf('Overlap : %.1f %%\n', ...
-            cfgINF.subEpochOverlap);
-
-        fprintf('Trials after subepoching : %d\n', ...
-            numel(ERPINF_Dataset.trials));
-
-    end
 
     %% ========================================================
     % FEATURE EXTRACTION
@@ -276,8 +204,12 @@ for iCase = 1:numel(Cases)
     %% ========================================================
 
     fprintf('\n');
+
     fprintf('Trials    : %d\n', ...
-        numel(ERPINF_Dataset.trials));
+        ERPINF_Dataset.nTrials);
+
+    fprintf('Subjects  : %d\n', ...
+        ERPINF_Dataset.nSubjects);
 
     fprintf('Features  : %d\n', ...
         ERPINF_Dataset.nFeatures);
@@ -312,5 +244,5 @@ set(0,'DefaultFigureVisible',origState);
 
 fprintf('\n');
 fprintf('================================\n');
-fprintf('ALL SUBEPOCH DATASETS CREATED\n');
+fprintf('ALL CONTROL DATASETS CREATED\n');
 fprintf('================================\n');

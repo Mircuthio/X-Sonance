@@ -30,7 +30,7 @@ set(0,'DefaultFigureVisible','off');
 %% ============================================================
 
 step2_indir = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 
 files = dir(fullfile(step2_indir,'*_epochData.mat'));
 
@@ -87,7 +87,7 @@ bandNames = fieldnames(cfgBP.bands);
 %% ============================================================
 
 outdir = ...
-    'D:\X-SONANCE\Dataset_MARCO\STEP4A_TOPOPLOT_MMN';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP4A_TOPOPLOT_MMN';
 
 if ~exist(outdir,'dir')
     mkdir(outdir);

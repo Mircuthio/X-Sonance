@@ -5,10 +5,10 @@
 clear; clc; close all
 
 inputFolder = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EXTRACTED_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EXTRACTED_DATA';
 
 outputFolder = ...
-    'D:\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
 
 if ~exist(outputFolder,'dir')
     mkdir(outputFolder);
