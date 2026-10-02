@@ -71,33 +71,33 @@ end
 %     step2_indir,...
 %     'STEP10F_CONTROL_DATASETS',...
 %     'ERPINF_Dataset_DIS_CONTROL_FULL.mat'));
-% 
+%
 % outdir = ...
 %     fullfile(outdir,...
 %     'DIS_CONTROL');
 
 
-% STEP 3
-load( ...
-    fullfile( ...
-    step2_indir,...
-    'STEP10F_CONTROL_DATASETS',...
-    'ERPINF_Dataset_CD_CONTROL_FULL.mat'));
-
-outdir = ...
-    fullfile(outdir,...
-    'CONDIS_CONTROL');
-
-% %STEP 4
+% % STEP 3
 % load( ...
 %     fullfile( ...
 %     step2_indir,...
 %     'STEP10F_CONTROL_DATASETS',...
-%     'ERPINF_Dataset_CD_FULL.mat'));
+%     'ERPINF_Dataset_CD_CONTROL_FULL.mat'));
 % 
 % outdir = ...
 %     fullfile(outdir,...
-%     'CONDIS_FULL');
+%     'CONDIS_CONTROL');
+
+%STEP 4
+load( ...
+    fullfile( ...
+    step2_indir,...
+    'STEP10F_CONTROL_DATASETS',...
+    'ERPINF_Dataset_CD_FULL.mat'));
+
+outdir = ...
+    fullfile(outdir,...
+    'CONDIS_FULL');
 
 %% ============================================================
 % LOAD DATASET
@@ -109,12 +109,12 @@ outdir = ...
 %     {'ERPINDEX'});
 % outdir = fullfile(outdir,'ERPINDEX');
 
-% ERPINDEX + ERAN_B
-ERPINF_Dataset = ...
-    select_erpinf_features( ...
-    ERPINF_Dataset,...
-    {'ERPINDEX','ERAN_B'});
-outdir = fullfile(outdir,'ERPINDEX_ERANB');
+% % ERPINDEX + ERAN_B
+% ERPINF_Dataset = ...
+%     select_erpinf_features( ...
+%     ERPINF_Dataset,...
+%     {'ERPINDEX','ERAN_B'});
+% outdir = fullfile(outdir,'ERPINDEX_ERANB');
 
 % % BETALOW
 % ERPINF_Dataset = ...
@@ -122,14 +122,14 @@ outdir = fullfile(outdir,'ERPINDEX_ERANB');
 %     ERPINF_Dataset,...
 %     {'BETALOW'});
 % outdir = fullfile(outdir,'BETALOW');
-% 
-% % ALL
-% ERPINF_Dataset = ...
-%     select_erpinf_features( ...
-%     ERPINF_Dataset,...
-%     {'ERPINDEX','ERAN_B','BETALOW'});
-% 
-% outdir = fullfile(outdir,'ERPINDEX_ERANB_BETALOW');
+%
+% ALL
+ERPINF_Dataset = ...
+    select_erpinf_features( ...
+    ERPINF_Dataset,...
+    {'ERPINDEX','ERAN_B','BETALOW'});
+
+outdir = fullfile(outdir,'ERPINDEX_ERANB_BETALOW');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
@@ -154,11 +154,60 @@ disp(ERPINF_Dataset.FeatureNames(:))
 cfgINF = struct();
 
 cfgINF.randomSeed = 10;
-cfgINF.useZScore = true;
 
 rng('default')
 rng(cfgINF.randomSeed)
 
+%% ------------------------------------------------------------
+% FEATURE PREPROCESSING
+%% ------------------------------------------------------------
+
+cfgINF.useZScore = true;
+
+cfgINF.usePCA = true;
+
+cfgINF.pcaMode = 'variance';
+
+cfgINF.pcaVarianceThreshold = 95;
+%% ------------------------------------------------------------
+% RUN NAME
+%% ------------------------------------------------------------
+
+runName = "";
+
+if cfgINF.useZScore
+    runName = runName + "_Z";
+end
+
+if cfgINF.usePCA
+
+    switch lower(cfgINF.pcaMode)
+
+        case 'variance'
+
+            runName = runName + ...
+                sprintf('_PCA%gVAR', ...
+                cfgINF.pcaVarianceThreshold);
+
+        case 'fixed'
+
+            runName = runName + ...
+                sprintf('_PCA%d', ...
+                cfgINF.nPCs);
+
+    end
+
+end
+
+if strlength(runName)==0
+    runName = "_RAW";
+end
+
+outdir = fullfile(outdir,char(runName));
+
+if ~exist(outdir,'dir')
+    mkdir(outdir);
+end
 %% ------------------------------------------------------------
 % CLASSES
 %% ------------------------------------------------------------
@@ -212,12 +261,13 @@ cfgINF.testRatio  = 0.20;
 
 cfgINF.kfold = 4;
 
-cfgINF.numIterations = 100;
+cfgINF.numIterations = 50;
 
 fprintf('\n');
 fprintf('================================\n');
 fprintf('DATASET SUMMARY\n');
 fprintf('================================\n');
+
 
 fprintf('Trials   : %d\n', ...
     ERPINF_Dataset.nTrials);
@@ -260,29 +310,111 @@ for iClf = 1:numel(cfgINF.classifiers)
         %% =====================================================
 
         [TrainTrials,...
-         TestTrials] = ...
+            TestTrials] = ...
             split_trialwise_trials( ...
             ERPINF_Dataset,...
             cfgINF);
         %% =====================================================
-        % Z-SCORE NORMALIZATION
+        % NORMALIZATION
         %% =====================================================
 
         Xtrain = vertcat(TrainTrials.ERPINF);
+        Xtest  = vertcat(TestTrials.ERPINF);
 
-        Xtest = vertcat(TestTrials.ERPINF);
+        %% =====================================================
+        % ZSCORE
+        %% =====================================================
 
-        mu = mean(Xtrain,1);
+        if cfgINF.useZScore
 
-        sd = std(Xtrain,[],1);
+            mu = mean(Xtrain,1);
 
-        sd(sd == 0) = 1;
+            sd = std(Xtrain,[],1);
 
-        Xtrain = ...
-            (Xtrain - mu) ./ sd;
+            sd(sd==0)=1;
 
-        Xtest = ...
-            (Xtest - mu) ./ sd;
+            Xtrain = ...
+                (Xtrain-mu)./sd;
+
+            Xtest = ...
+                (Xtest-mu)./sd;
+
+        end
+
+        %% =====================================================
+        % PCA
+        %% =====================================================
+
+        if cfgINF.usePCA
+
+            [coeff,...
+                scoreTrain,...
+                latent,...
+                ~,...
+                explained,...
+                muPCA] = pca(Xtrain);
+
+            cumExplained = ...
+                cumsum(explained);
+
+            switch lower(cfgINF.pcaMode)
+
+                case 'variance'
+
+                    nComp = ...
+                        find( ...
+                        cumExplained >= ...
+                        cfgINF.pcaVarianceThreshold,...
+                        1,...
+                        'first');
+
+                    if isempty(nComp)
+                        nComp = size(scoreTrain,2);
+                    end
+
+                    fprintf('Compression Ratio : %.2f %%\n', ...
+                        100*nComp/size(coeff,1));
+
+                case 'fixed'
+
+                    nComp = ...
+                        min(cfgINF.nPCs,...
+                        size(scoreTrain,2));
+
+                otherwise
+
+                    error('Unknown PCA mode');
+
+            end
+
+            Xtrain = ...
+                scoreTrain(:,1:nComp);
+
+            Xtest = ...
+                (Xtest - muPCA) * ...
+                coeff(:,1:nComp);
+
+            fprintf('\n');
+            fprintf('================================\n');
+            fprintf('PCA ENABLED\n');
+            fprintf('================================\n');
+
+            fprintf('Mode : %s\n', ...
+                cfgINF.pcaMode);
+
+            fprintf('Components : %d\n', ...
+                nComp);
+
+            fprintf('Explained Variance : %.2f %%\n', ...
+                cumExplained(nComp));
+
+            fprintf('Original Features : %d\n', ...
+                size(coeff,1));
+
+            fprintf('Retained Components : %d\n', ...
+                nComp);
+
+        end
 
         for iT = 1:numel(TrainTrials)
 
@@ -315,8 +447,13 @@ for iClf = 1:numel(cfgINF.classifiers)
         Features.FeatureNames = ...
             ERPINF_Dataset.FeatureNames;
 
-        Features.nFeatures = ...
-            numel(TrainTrials(1).ERPINF);
+        if cfgINF.usePCA
+            Features.nFeatures = ...
+                size(Xtrain,2);
+        else
+            Features.nFeatures = ...
+                numel(TrainTrials(1).ERPINF);
+        end
         %% =====================================================
         % CLASSIFIER
         %% =====================================================
@@ -327,10 +464,10 @@ for iClf = 1:numel(cfgINF.classifiers)
             Features.SignalField;
 
         [TrainEEG,...
-         TestEEG,...
-         outClassifier,...
-         PredField,...
-         ProbField] = ...
+            TestEEG,...
+            outClassifier,...
+            PredField,...
+            ProbField] = ...
             run_classifier_fold( ...
             Features.TrainEEG,...
             Features.TestEEG,...
@@ -413,6 +550,21 @@ for iClf = 1:numel(cfgINF.classifiers)
 
         IterResult.nFeatures = ...
             Features.nFeatures;
+        if cfgINF.usePCA
+
+            IterResult.nPCs = ...
+                nComp;
+
+            IterResult.ExplainedVariance = ...
+                cumExplained(nComp);
+
+        end
+
+        IterResult.PCAMode = ...
+            cfgINF.pcaMode;
+
+        IterResult.PCAVarianceThreshold = ...
+            cfgINF.pcaVarianceThreshold;
 
         IterResult.FeatureNames = ...
             Features.FeatureNames;
@@ -598,6 +750,27 @@ for iClf = 1:numel(cfgINF.classifiers)
         Results_TrialWise.(classifierName).Iter(1).nFeatures;
     SummaryTable.ZScore(iClf,1) = ...
         cfgINF.useZScore;
+    SummaryTable.PCA(iClf,1) = ...
+        cfgINF.usePCA;
+
+    SummaryTable.PCAMode{iClf,1} = ...
+        cfgINF.pcaMode;
+
+    SummaryTable.PCAVariance(iClf,1) = ...
+        cfgINF.pcaVarianceThreshold;
+
+    SummaryTable.RunName{iClf,1} = ...
+        char(runName);
+
+    if cfgINF.usePCA
+        SummaryTable.nPCs(iClf,1) = ...
+            Results_TrialWise.(classifierName).Iter(1).nPCs;
+        SummaryTable.ActualExplainedVariance(iClf,1) = ...
+            Results_TrialWise.(classifierName).Iter(1).ExplainedVariance;
+    else
+        SummaryTable.nPCs(iClf,1) = 0;
+        SummaryTable.ActualExplainedVariance(iClf,1) = 0;
+    end
 end
 
 writetable( ...
@@ -612,8 +785,9 @@ writetable( ...
 if numel(cfgINF.classifiers) == 1
 
     saveName = sprintf( ...
-        'STEP10C_ERP_INFORMED_TRIALWISE_%s.mat', ...
-        cfgINF.classifiers{1});
+        'STEP10C_ERP_INFORMED_TRIALWISE_%s%s.mat', ...
+        cfgINF.classifiers{1}, ...
+        char(runName));
 
 else
 
@@ -622,8 +796,9 @@ else
         '_');
 
     saveName = sprintf( ...
-        'STEP10C_ERP_INFORMED_TRIALWISE_%s.mat',...
-        allClf);
+        'STEP10C_ERP_INFORMED_TRIALWISE_%s%s.mat',...
+        allClf,...
+        char(runName));
 
 end
 
@@ -632,6 +807,7 @@ save( ...
     'Results_TrialWise',...
     'cfgINF',...
     'CaseCfg',...
+    'runName',...
     '-v7.3');
 
 save( ...

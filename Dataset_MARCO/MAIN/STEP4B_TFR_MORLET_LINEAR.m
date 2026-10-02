@@ -1,5 +1,5 @@
 %% =========================================================================
-% STEP4B_TFR_MORLET__LINEAR
+% STEP4B_TFR_MORLET_LINEAR
 %% =========================================================================
 %
 % Channel-first induced gamma analysis using Park et al. (2011)
@@ -36,6 +36,7 @@ origState = get(0, 'DefaultFigureVisible');
 set(0, 'DefaultFigureVisible', 'off');
 
 addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
+eeglab nogui
 
 set(groot, 'defaultTextInterpreter', 'tex');
 set(groot, 'defaultAxesTickLabelInterpreter', 'tex');
@@ -52,7 +53,7 @@ inputDir = projectRoot;
 outputRoot = fullfile( ...
     projectRoot, ...
     'STEP4B_TFR_MORLET', ...
-    'PARK_CHANNELFIRST_LINEAR_UV2');
+    'PARK_CHANNELFIRST_LINEAR_UV2','ALL_ROI');
 
 if ~exist(outputRoot, 'dir')
     mkdir(outputRoot);
@@ -153,14 +154,18 @@ cfgTFR.save_trial_level = false;
 % ROI definitions
 %% =========================================================================
 
-MAIN_ROI_TFR
+% MAIN_ROI_TFR
+% 
+% cfgTFR.rois = ParkROI;
 
-cfgTFR.rois = ParkROI;
+MAIN_ROI
+
+cfgTFR.rois = ROI;
 
 roiNames = fieldnames(cfgTFR.rois);
 
 assert(~isempty(roiNames), ...
-    'No ROI defined in ParkROI.');
+    'No ROI defined in ParkROI or ROI.');
 
 fprintf('\n=====================================\n');
 fprintf('ROI CONFIGURATION\n');
@@ -709,8 +714,8 @@ for w = 1:numel(topoWindowNames)
     colorbar
     title('Consonant - Dissonant')
 
-    sgtitle(sprintf([ ...
-        'Channel-first induced gamma: %d-%d Hz, %d-%d ms (\\muV^2)'], ...
+    sgtitle(sprintf(...
+        'Channel-first induced gamma: %d-%d Hz, %d-%d ms (\\muV^2)', ...
         cfgTFR.gamma_freq_win(1), ...
         cfgTFR.gamma_freq_win(2), ...
         round(currentWin(1) * 1000), ...
@@ -746,7 +751,6 @@ save( ...
     'allChanLocs', ...
     'allChanLabels', ...
     'cfgTFR', ...
-    'ParkROI', ...
     '-v7.3');
 
 fprintf('\n=====================================\n');

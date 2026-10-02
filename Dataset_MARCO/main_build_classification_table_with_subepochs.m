@@ -10,14 +10,15 @@
 % - cfgFBCSP.subEpochLength
 % - cfgFBCSP.subEpochOverlap
 % - file and folder information
-
+% If both structures exist in a MAT file, LOSO is given priority and the
+% source is reported in the ResultType column.
 clear; clc;
 
 %% Select root folder
 %% Select root folder
 % rootDir = uigetdir(pwd, 'Select the root folder containing classification results');
 
-rootDir = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP9_FBCSP_TRIALWISE\PART1';
+rootDir = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP9_FBCSP_LOSO\PART4_ERP_GUIDED_150_350';
 if isequal(rootDir, 0)
     error('No folder selected.');
 end
@@ -37,6 +38,7 @@ nFiles = numel(matFiles);
 FileName       = strings(nFiles, 1);
 RelativeFolder = strings(nFiles, 1);
 FullPath       = strings(nFiles, 1);
+ResultType     = strings(nFiles, 1);
 Status         = strings(nFiles, 1);
 
 MeanBalancedAccuracy = nan(nFiles, 1);
@@ -67,7 +69,19 @@ for iFile = 1:nFiles
     try
         % Load the variables of interest into a structure.
         S = load(matPath, 'Results_LOSO', 'cfgFBCSP');
+        %% Identify the result structure
+        % Priority: Results_LOSO > Results_TrialWise.
+        resultStruct = [];
 
+        if isfield(S, 'Results_LOSO') && isstruct(S.Results_LOSO)
+            resultStruct = S.Results_LOSO;
+            ResultType(iFile) = "LOSO";
+        elseif isfield(S, 'Results_TrialWise') && isstruct(S.Results_TrialWise)
+            resultStruct = S.Results_TrialWise;
+            ResultType(iFile) = "TrialWise";
+        else
+            ResultType(iFile) = "NotFound";
+        end
         %% Classification results
         if isfield(S, 'Results_LOSO') && ...
                 isfield(S.Results_LOSO, 'QDA')
@@ -130,18 +144,25 @@ for iFile = 1:nFiles
                     scalarValue(cfg.subEpochOverlap);
             end
         end
-
-        Status(iFile) = "OK";
-
+        if ResultType(iFile) == "NotFound"
+            Status(iFile) = "WARNING: Results_LOSO and Results_TrialWise not found";
+        elseif isnan(MeanBalancedAccuracy(iFile)) && ...
+                isnan(StdBalancedAccuracy(iFile))
+            Status(iFile) = "WARNING: " + ResultType(iFile) + ...
+                ".QDA accuracy fields not found";
+        else
+            Status(iFile) = "OK";
+        end
     catch ME
+        ResultType(iFile) = "ERROR";
         Status(iFile) = "ERROR: " + string(ME.message);
-        warning('Could not process %s: %s', matPath, ME.message);
+        warning('Could not process:\n%s\n%s', matPath, ME.message);
     end
 end
 
 %% Create output table
 ResultsTable = table(...
-    FileName, RelativeFolder, FullPath, ...
+    FileName, RelativeFolder, FullPath, ResultType, ...
     MeanBalancedAccuracy, StdBalancedAccuracy, ...
     CSPComponents, MI_k, ...
     TimeWindowStart, TimeWindowEnd, ...

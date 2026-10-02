@@ -27,7 +27,7 @@
 clear; clc;
 
 %% Select root folder
-rootDir = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP10C_ERP_INFORMED_LOSO\ERP_INFORMED\CD_LOSO';
+rootDir = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\STEP12C_TFRINF_TRIALWISE';
 
 if isequal(rootDir, 0)
     error('No folder selected.');

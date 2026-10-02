@@ -132,7 +132,7 @@ set(0,'DefaultFigureVisible','off');
 %% ============================================================
 
 step2_indir = ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
 
 if ~exist(step2_indir,'dir')
     error('STEP2 folder not found');
@@ -148,39 +148,15 @@ step4_outroot = ...
 if ~exist(step4_outroot,'dir')
     mkdir(step4_outroot);
 end
-%% 2) LOAD FILES STEP2
-files = dir(fullfile(step2_indir,'*_epochData.mat'));
 
-if isempty(files)
-    error('No STEP2 files found');
-end
+%% =========================================================================
+% LOAD
+%% =========================================================================
 
-nFiles = numel(files);
+load(step2_indir,'subj_list')
 
-subj_list = struct( ...
-    'subj_id',cell(nFiles,1), ...
-    'data_trials',cell(nFiles,1));
-
-for i = 1:nFiles
-
-    S = load(fullfile( ...
-        files(i).folder,...
-        files(i).name));
-
-    subjData = S.subjectEpochData;
-
-    subj_list(i).subj_id = ...
-        subjData.subjectID;
-
-    subj_list(i).data_trials = ...
-        subjData.data_trials;
-
-    fprintf( ...
-        '[%02d/%02d] %s loaded\n',...
-        i,nFiles,...
-        string(subjData.subjectID));
-
-end
+assert(~isempty(subj_list), ...
+    'subj_list is empty.')
 
 %% ============================================================
 % DATASET SUMMARY
@@ -340,13 +316,13 @@ cfgTopo = struct();
 cfgTopo.enable = false;
 cfgTopo.windows = {
 
-    [0.10 0.25]
-    [0.25 0.50]
-    [0.50 0.80]
+[0.10 0.25]
+[0.25 0.50]
+[0.50 0.80]
 
-    [0.17 0.22]
-    [0.22 0.32]
-    [0.45 0.55]
+[0.17 0.22]
+[0.22 0.32]
+[0.45 0.55]
 
 };
 cfgTopo.window_names = { ...
@@ -467,6 +443,115 @@ for iSub = 1:numel(subj_list)
     % end
 
 end
+%% ============================================================
+% SUBJECT LEVEL PLOTS
+%% ============================================================
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('SUBJECT BANDPOWER PLOTS\n');
+fprintf('================================\n');
+
+outdir_subjects = ...
+    fullfile(outdir,'SubjectPlots');
+
+if ~exist(outdir_subjects,'dir')
+    mkdir(outdir_subjects);
+end
+
+subjNames = fieldnames(BandPower_Subj);
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    roiDir = ...
+        fullfile(outdir_subjects,roiName);
+
+    if ~exist(roiDir,'dir')
+        mkdir(roiDir);
+    end
+
+    for b = 1:numel(bandNames)
+
+        bandName = bandNames{b};
+
+        figH = figure( ...
+            'Color','w',...
+            'Position',[100 100 1400 800]);
+
+        nSubj = numel(subjNames);
+
+        nRows = ceil(sqrt(nSubj));
+        nCols = ceil(nSubj/nRows);
+
+        tiledlayout(nRows,nCols);
+
+        for iSub = 1:nSubj
+
+            subjID = subjNames{iSub};
+
+            bp = ...
+                BandPower_Subj.(subjID).(roiName).(bandName);
+
+            nexttile
+
+            hold on
+
+            plot( ...
+                bp.time,...
+                bp.grand_mean(:,1),...
+                'b',...
+                'LineWidth',1.5);
+
+            plot( ...
+                bp.time,...
+                bp.grand_mean(:,2),...
+                'r',...
+                'LineWidth',1.5);
+
+            if size(bp.grand_mean,2)==2
+
+                plot( ...
+                    bp.time,...
+                    bp.grand_mean(:,2)- ...
+                    bp.grand_mean(:,1),...
+                    'k',...
+                    'LineWidth',1);
+
+            end
+
+            xline(0,'k:');
+
+            title(subjID,'Interpreter','none');
+
+            xlabel('Time (s)');
+            ylabel('Power');
+
+            grid on
+
+            hold off
+
+        end
+
+        sgtitle(sprintf( ...
+            '%s | %s | Subject BandPower',...
+            roiName,...
+            bandName));
+
+        saveas( ...
+            figH,...
+            fullfile( ...
+            roiDir,...
+            sprintf( ...
+            '%s_%s_Subjects.png',...
+            roiName,...
+            bandName)));
+
+        close(figH)
+
+    end
+end
 
 %% ============================================================
 % GROUP LEVEL ANALYSIS
@@ -502,7 +587,7 @@ end
 % fprintf('================================\n');
 % fprintf('GROUP LEVEL CHANNEL BAND POWER\n');
 % fprintf('================================\n');
-% 
+%
 % for b = 1:numel(bandNames)
 %     bandName = bandNames{b};
 %     fprintf('%s\n',bandName);

@@ -30,29 +30,16 @@ set(0,'DefaultFigureVisible','off');
 %% ============================================================
 
 step2_indir = ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\DATA_SUBJECTS\All_trials\EPOCH_DATA';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
 
-files = dir(fullfile(step2_indir,'*_epochData.mat'));
+%% =========================================================================
+% LOAD
+%% =========================================================================
 
-nFiles = numel(files);
+load(step2_indir,'subj_list')
 
-subj_list = struct( ...
-    'subj_id',cell(nFiles,1),...
-    'data_trials',cell(nFiles,1));
-
-for i = 1:nFiles
-
-    S = load(fullfile( ...
-        files(i).folder,...
-        files(i).name));
-
-    subj_list(i).subj_id = ...
-        S.subjectEpochData.subjectID;
-
-    subj_list(i).data_trials = ...
-        S.subjectEpochData.data_trials;
-
-end
+assert(~isempty(subj_list), ...
+    'subj_list is empty.')
 
 %% ============================================================
 % CONFIG

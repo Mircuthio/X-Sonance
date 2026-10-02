@@ -5,18 +5,14 @@
 clear; close all; clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
-addpath(genpath('D:\eeglab2026.0.0\'))
+addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
+eeglab nogui
 
-%% 1) PATH SUBJ DATA
 %% ============================================================
 % INPUT DIRECTORY
 %% ============================================================
-step2_indir = ...
-    fullfile( ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO',...
-    'DATA_SUBJECTS',...
-    'All_trials',...
-    'EPOCH_DATA');
+step2_indir = fullfile('C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO');
+
 if ~exist(step2_indir, 'dir')
     error('Cartella STEP2 non trovata: %s', step2_indir);
 end
@@ -31,38 +27,14 @@ step3_outroot = ...
 if ~exist(step3_outroot,'dir')
     mkdir(step3_outroot);
 end
-%% 2) LOAD FILES STEP2
-files = dir(fullfile(step2_indir, '*_epochData.mat'));
-if isempty(files)
-    error('Nessun file *_epochData.mat trovato in %s', step2_indir);
-end
+%% =========================================================================
+% LOAD
+%% =========================================================================
 
-nFiles = numel(files);
-subj_list = struct('subj_id', cell(nFiles,1), 'data_trials', cell(nFiles,1));
+load(step2_indir,'subj_list')
 
-for i = 1:nFiles
-    S = load(fullfile(files(i).folder, files(i).name));
-
-    if ~isfield(S, 'subjectEpochData')
-        error('Nel file %s non trovo subjectEpochData.', files(i).name);
-    end
-
-    subjData = S.subjectEpochData;
-
-    if isfield(subjData, 'subjectID')
-        subj_list(i).subj_id = subjData.subjectID;
-    else
-        subj_list(i).subj_id = regexprep(files(i).name, '_epochData\.mat$', '');
-    end
-
-    if isfield(subjData, 'data_trials')
-        subj_list(i).data_trials = subjData.data_trials;
-    else
-        error('Nel file %s non trovo data_trials.', files(i).name);
-    end
-
-    fprintf('Caricato soggetto %s\n', string(subj_list(i).subj_id));
-end
+assert(~isempty(subj_list), ...
+    'subj_list is empty.')
 %% 3) PARAMETERS
 %% ERP ANALYSES
 %

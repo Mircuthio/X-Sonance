@@ -23,10 +23,7 @@ addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
 
 step2_indir = ...
     fullfile( ...
-    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO',...
-    'DATA_SUBJECTS',...
-    'All_trials',...
-    'EPOCH_DATA');
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO');
 
 if ~exist(step2_indir,'dir')
     error('STEP2 directory not found');
@@ -45,41 +42,14 @@ if ~exist(outdir,'dir')
     mkdir(outdir);
 end
 
-%% ============================================================
-% LOAD SUBJECTS
-%% ============================================================
+%% =========================================================================
+% LOAD
+%% =========================================================================
 
-files = dir(fullfile(step2_indir,'*_epochData.mat'));
+load(step2_indir,'subj_list')
 
-if isempty(files)
-    error('No epoch files found');
-end
-
-nFiles = numel(files);
-
-subj_list = struct( ...
-    'subj_id',cell(nFiles,1), ...
-    'data_trials',cell(nFiles,1));
-
-for i = 1:nFiles
-
-    S = load(fullfile( ...
-        files(i).folder,...
-        files(i).name));
-
-    subjData = S.subjectEpochData;
-
-    subj_list(i).subj_id = ...
-        subjData.subjectID;
-
-    subj_list(i).data_trials = ...
-        subjData.data_trials;
-
-    fprintf('[%02d/%02d] %s loaded\n',...
-        i,nFiles,...
-        string(subjData.subjectID));
-
-end
+assert(~isempty(subj_list), ...
+    'subj_list is empty.')
 
 %% ============================================================
 % COMPARISON
