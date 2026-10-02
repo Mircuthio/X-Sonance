@@ -244,7 +244,8 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
-addpath(genpath('D:\eeglab2026.0.0\'))
+addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
+eeglab nogui
 
 set(groot,...
     'defaultTextInterpreter','tex');

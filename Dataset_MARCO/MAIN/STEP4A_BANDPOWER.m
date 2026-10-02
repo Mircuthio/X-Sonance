@@ -153,7 +153,7 @@ end
 % LOAD
 %% =========================================================================
 
-load(step2_indir,'subj_list')
+load(fullfile(step2_indir,'subj_list.mat'));
 
 assert(~isempty(subj_list), ...
     'subj_list is empty.')

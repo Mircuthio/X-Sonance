@@ -3,8 +3,10 @@
 % Carica i dati STEP2_EPOCHING e instrada analisi single o group
 %% ============================================================
 clear; close all; clc
+
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
+
 addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
 eeglab nogui
 
@@ -31,7 +33,7 @@ end
 % LOAD
 %% =========================================================================
 
-load(step2_indir,'subj_list')
+load(fullfile(step2_indir,'subj_list.mat'));
 
 assert(~isempty(subj_list), ...
     'subj_list is empty.')
