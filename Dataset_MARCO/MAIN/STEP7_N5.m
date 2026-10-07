@@ -144,7 +144,15 @@ plot_n5_waveforms( ...
 %% ============================================================
 % ZOOM
 %% ============================================================
+% cfgN5.diff_mode = {'dis_minus_con','con_minus_dis'};
+% cfgN5.peak_mode = {'min','max'};
+% cfgN5.plot_mode = {'all','conditions','diff','overlay'};
+cfgN5.smooth_plot = false;
+cfgN5.smooth_window = 5;
 
+cfgN5.diff_mode = 'dis_minus_con'; %
+cfgN5.peak_mode = 'min'; %
+cfgN5.plot_mode = 'diff'; %
 plot_n5_zoom( ...
     subj_list,...
     cfgN5,...

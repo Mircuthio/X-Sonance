@@ -1,0 +1,24 @@
+ver
+-----------------------------------------------------------------------------------------------------
+MATLAB Version: 26.1.0.3346908 (R2026a) Update 5
+MATLAB License Number: 40500131
+Operating System: Microsoft Windows 11 Home Version 10.0 (Build 26200)
+Java Version: Java 1.8.0_202-b08 with Oracle Corporation Java HotSpot(TM) 64-Bit Server VM mixed mode
+-----------------------------------------------------------------------------------------------------
+MATLAB                                                Version 26.1        (R2026a)
+Simulink                                              Version 26.1        (R2026a)
+Audio Toolbox                                         Version 26.1        (R2026a)
+Curve Fitting Toolbox                                 Version 26.1        (R2026a)
+Data Acquisition Toolbox                              Version 26.1        (R2026a)
+Deep Learning Toolbox                                 Version 26.1        (R2026a)
+EEGLAB Toolbox to process EEG data                    Version -           see     
+Medical Imaging Toolbox                               Version 26.1        (R2026a)
+Optimization Toolbox                                  Version 26.1        (R2026a)
+Parallel Computing Toolbox                            Version 26.1        (R2026a)
+Predictive Maintenance Toolbox                        Version 26.1        (R2026a)
+Reinforcement Learning Toolbox                        Version 26.1        (R2026a)
+Signal Processing Toolbox                             Version 26.1        (R2026a)
+Statistics and Machine Learning Toolbox               Version 26.1        (R2026a)
+Text Analytics Toolbox                                Version 26.1        (R2026a)
+Wavelet Toolbox                                       Version 26.1        (R2026a)
+diary off

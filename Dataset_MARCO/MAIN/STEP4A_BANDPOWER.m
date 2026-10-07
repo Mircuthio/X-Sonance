@@ -127,6 +127,14 @@ clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
+% addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
+% eeglab nogui
 %% ============================================================
 % LOAD STEP2 DATA
 %% ============================================================

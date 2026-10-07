@@ -283,6 +283,7 @@ origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
 addpath(genpath('C:\Users\mirco\Desktop\eeglab2026.1.0\'))
+eeglab nogui
 
 set(groot,...
     'defaultTextInterpreter','tex');
@@ -361,6 +362,8 @@ cfgTFR.freqs = 30:1:60;
 cfgTFR.nCycles = 7;
 
 cfgTFR.baseline_win = [-0.2 -0.05];
+
+plotWin = [-0.200 1.000];
 
 cfgTFR.save_trial_level = false;
 
@@ -567,6 +570,12 @@ for r=1:numel(roiNames)
     groupData = ...
         TFR_Group.(roiName);
 
+    idxTime = groupData.time >= plotWin(1) & ...
+        groupData.time <= plotWin(2);
+    assert(any(idxTime), ...
+        'No time points found in selected plot window');
+    timePlot = groupData.time(idxTime);
+
     gammaStats.(roiName) = ...
         extract_gamma_window( ...
         TFR_Group.(roiName),...
@@ -594,11 +603,15 @@ for r=1:numel(roiNames)
     subplot(3,1,1)
 
     imagesc( ...
-        groupData.time,...
+        timePlot,...
         groupData.freq,...
-        groupData.Consonant.power)
+        groupData.Consonant.power(:,idxTime))
 
     axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
     colorbar
         clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
@@ -607,11 +620,15 @@ for r=1:numel(roiNames)
     subplot(3,1,2)
 
     imagesc( ...
-        groupData.time,...
-        groupData.freq,...
-        groupData.Dissonant.power)
+    timePlot,...
+    groupData.freq,...
+    groupData.Dissonant.power(:,idxTime))
 
     axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
     colorbar
     clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
 
@@ -620,11 +637,15 @@ for r=1:numel(roiNames)
     subplot(3,1,3)
 
     imagesc( ...
-        groupData.time,...
+        timePlot,...
         groupData.freq,...
-        diffMap)
+        diffMap(:,idxTime))
 
     axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
     colorbar
         clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
 
@@ -635,6 +656,132 @@ for r=1:numel(roiNames)
         parkdir,...
         sprintf('TFR_Group_%s.png',roiName)));
     close
+
+    %% ============================================================
+    % EXTRA FIGURE: CONSONANT vs DISSONANT
+    %% ============================================================
+
+    figure
+
+    subplot(2,1,1)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        groupData.Consonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+    colorbar
+
+    title(sprintf('%s - Consonant', ...
+        format_tex_name(roiName)))
+
+    subplot(2,1,2)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        groupData.Dissonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+    colorbar
+
+    title(sprintf('%s - Dissonant', ...
+        format_tex_name(roiName)))
+
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_CD_%s.png',roiName)));
+
+    close
+    %% ============================================================
+    % EXTRA FIGURE: DIFFERENCE ONLY
+    %% ============================================================
+
+    figure
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        diffMap(:,idxTime))
+
+    axis xy
+    hold on
+
+    xline(0,'k--','LineWidth',1.5)
+    xline(0.10,'r--','LineWidth',1.5)
+    xline(0.25,'r--','LineWidth',1.5)
+
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    colorbar
+
+    xlabel('Time (s)')
+    ylabel('Frequency (Hz)')
+
+    title(sprintf('%s - Difference', ...
+        format_tex_name(roiName)))
+
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_DIFF_%s.png',roiName)));
+
+    close
+    %% ============================================================
+    % EXTRA FIGURE: DIFFERENCE ZOOM PARK
+    %% ============================================================
+
+    figure
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        diffMap(:,idxTime))
+
+    axis xy
+    hold on
+
+    xline(0,'k--','LineWidth',1.5)
+    xline(0.10,'r--','LineWidth',1.5)
+    xline(0.25,'r--','LineWidth',1.5)
+
+    xlim([0 0.4])
+    ylim([30 60])
+
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    colorbar
+
+    xlabel('Time (s)')
+    ylabel('Frequency (Hz)')
+
+    title(sprintf('%s - Difference Zoom Park', ...
+        format_tex_name(roiName)))
+    set(gca,'FontSize',12)
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_DIFF_ZOOM_%s.png',roiName)));
+
+    close
+
     gammaConTime = ...
         mean(groupData.Consonant.power,1);
     gammaDisTime = ...
@@ -651,19 +798,21 @@ for r=1:numel(roiNames)
         gammaDiffTime;
 
     figure
-    plot(groupData.time,...
-        gammaConTime,...
+    plot(timePlot,...
+        gammaConTime(idxTime),...
         'LineWidth',2)
     hold on
-    plot(groupData.time,...
-        gammaDisTime,...
-        'LineWidth',2)
-    plot(groupData.time,...
-        gammaDiffTime,...
-        'k--',...
+    plot(timePlot,...
+        gammaDisTime(idxTime),...
         'LineWidth',2)
 
-    xline(0,'k')
+    plot(timePlot,...
+        gammaDiffTime(idxTime),...
+        'k--',...
+        'LineWidth',2)
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
     legend( ...
         'Consonant',...
         'Dissonant',...

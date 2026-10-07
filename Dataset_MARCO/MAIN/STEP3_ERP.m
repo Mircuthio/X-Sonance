@@ -7,6 +7,13 @@ clear; close all; clc
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
 
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
+
 addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
 eeglab nogui
 
@@ -46,7 +53,7 @@ assert(~isempty(subj_list), ...
 % 4. LIMO input preparation
 % comparisonNameList =  {'Consonance','Difference',...
 %     'Goal','NoGoal','Control','All'};
-comparisonNameList =  {'All'};
+comparisonNameList =  {'Consonance'};
 for i=1:numel(comparisonNameList)
     try
         cfg = struct();
@@ -246,6 +253,12 @@ for i=1:numel(comparisonNameList)
                     roi_erp = extract_roi_erp( ...
                         subj_in, ...
                         cfg_curr);
+                    fprintf('\nROI = %s\n',roiName);
+                    disp(roi_erp.conditions)
+                    disp(size(roi_erp.grand_avg))
+                    % roi_erp = filter_erp_conditions( ...
+                    %     roi_erp,...
+                    %     cfg_curr);
                     roi_erp.roiName = roiName;
                     if isempty(roi_erp)
                         warning('No ERP extracted for %s', ...
@@ -284,7 +297,7 @@ for i=1:numel(comparisonNameList)
                             numel(cfg.conditions)==2
                         cfgDiff = struct();
                         cfgDiff.title_str = sprintf( ...
-                            'Difference ERP %s - %s',string(subj_curr.subj_id),roiName);
+                            'Difference ERP %s - %s',string(subj_curr.subj_id),format_tex_name(roiName));
                         cfgDiff.save_path = fullfile( ...
                             save_dir,sprintf('ERP_Difference_%s_%s.png',safeID,roiName));
                         plot_difference_wave(roi_erp,cfgDiff); %cond2 - Cond1
@@ -335,6 +348,9 @@ for i=1:numel(comparisonNameList)
             % Concatenate all trials from all subjects and build
             % a single ERP waveform per ROI.
             roi_erp = extract_roi_erp(pooled_trials_subject, cfg_curr);
+            % roi_erp = filter_erp_conditions( ...
+            %     roi_erp,...
+            %     cfg_curr);
             if isempty(roi_erp)
                 warning('No ERP extracted for ROI %s', roiName);
                 continue
@@ -364,7 +380,7 @@ for i=1:numel(comparisonNameList)
 
             end
             cfgPlot.cond_idx = 1:numel(cfg.conditions);
-            cfgPlot.title_str = sprintf('Pooled-Trial ERP - %s', roiName);
+            cfgPlot.title_str = sprintf('Pooled-Trial ERP - %s', format_tex_name(roiName));
             cfgPlot.show_zero = true;
             cfgPlot.show_error = true;
             cfgPlot.error_type = 'sem';
@@ -376,13 +392,16 @@ for i=1:numel(comparisonNameList)
             if cfg.generate_difference_plots && ...
                     numel(cfg.conditions)==2
                 cfgDiff = struct();
-                cfgDiff.title_str = sprintf('Pooled Difference ERP - %s',roiName);
+                cfgDiff.title_str = sprintf('Pooled Difference ERP - %s',format_tex_name(roiName));
                 cfgDiff.save_path = fullfile( ...
                     step3_outdir,'ERP_plots',roiName,sprintf('ERP_Pooled_Difference_%s.png',roiName));
                 plot_difference_wave(ERP_Pooled.(roiName),cfgDiff);
             end
             %% Group-average ERP
             roi_erp = extract_roi_erp(subj_list, cfg_curr);
+            % roi_erp = filter_erp_conditions( ...
+            %     roi_erp,...
+            %     cfg_curr);
             if isempty(roi_erp)
                 warning('No ERP extracted for ROI %s', roiName);
                 continue
@@ -412,7 +431,7 @@ for i=1:numel(comparisonNameList)
 
             end
             cfgPlot.cond_idx = 1:numel(cfg.conditions);
-            cfgPlot.title_str = sprintf('Group ERP - %s', roiName);
+            cfgPlot.title_str = sprintf('Group ERP - %s', format_tex_name(roiName));
             cfgPlot.show_zero = true;
             cfgPlot.show_error = true;
             cfgPlot.error_type = 'sem';
@@ -423,7 +442,7 @@ for i=1:numel(comparisonNameList)
             plot_erp_waveforms(ERP_Group.(roiName), cfgPlot);
             if numel(cfg.conditions)==2
                 cfgDiff = struct();
-                cfgDiff.title_str = sprintf('Difference ERP - %s',roiName);
+                cfgDiff.title_str = sprintf('Difference ERP - %s',format_tex_name(roiName));
                 cfgDiff.save_path = ...
                     fullfile(step3_outdir,'ERP_plots',roiName,sprintf('ERP_Difference_%s.png',roiName));
                 plot_difference_wave(ERP_Group.(roiName),cfgDiff);
@@ -440,7 +459,7 @@ for i=1:numel(comparisonNameList)
                     0.8500 0.3250 0.0980
                     ];
                 cfgLimoPlot.ci_alpha = 0.15;
-                cfgLimoPlot.title_str =  sprintf('Limo-Group ERP - %s', roiName);
+                cfgLimoPlot.title_str =  sprintf('Limo-Group ERP - %s', format_tex_name(roiName));
                 cfgLimoPlot.save_path = fullfile(step3_outdir, 'ERP_plots', roiName, sprintf('Limo_Group_%s.png', roiName));
                 [plot_dir,~,~] = fileparts(cfgLimoPlot.save_path);
                 if ~exist(plot_dir, 'dir'), mkdir(plot_dir); end
@@ -545,7 +564,7 @@ for i=1:numel(comparisonNameList)
 
                 cfgTopoPlot.title_str = ...
                     sprintf('%s - %s', ...
-                    windowName,...
+                    format_tex_name(windowName),...
                     condName);
 
                 cfgTopoPlot.save_path = ...
@@ -575,7 +594,7 @@ for i=1:numel(comparisonNameList)
                 cfgTopoPlot.title_str = ...
                     sprintf( ...
                     '%s Difference Topography',...
-                    windowName);
+                    format_tex_name(windowName));
 
                 cfgTopoPlot.save_path = ...
                     fullfile( ...
@@ -623,7 +642,12 @@ for i=1:numel(comparisonNameList)
 
         fprintf('\n================================\n');
         fprintf('RUN FAILED: %s\n',cfg.comparisonName);
-        fprintf('%s\n',ME.message);
+        fprintf('ERROR:\n%s\n',ME.message);
+
+        fprintf('\nFILE:\n%s\n',ME.stack(1).file);
+        fprintf('LINE:\n%d\n',ME.stack(1).line);
+
         fprintf('================================\n');
+
     end
 end

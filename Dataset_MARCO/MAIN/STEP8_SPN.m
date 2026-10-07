@@ -43,8 +43,8 @@ end
 
 cfgSPN = struct();
 
-cfgSPN.preStim  = 1.5;
-cfgSPN.postStim = 0.5;
+cfgSPN.preStim  = 1.2;
+cfgSPN.postStim = 0.1;
 
 cfgSPN.baseline = [-1.5 -1.2];
 
@@ -59,7 +59,7 @@ cfgSPN.validTriggers = [7 8];
 %% ============================================================
 
 cfgSPN.windows = { ...
-    [-1.5 -1.0]
+    [-1.2 -1.0]
     [-1.0 -0.5]
     [-0.5  0.0]
     [-1.5  0.0]

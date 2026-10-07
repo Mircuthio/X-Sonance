@@ -83,7 +83,7 @@ load(fullfile(step2_indir,'subj_list.mat'));
 outputdirCASE = 'STEP9_FBCSP_LOSO';
 
 Cases = build_fbcsp_cases();
-numiCase = 18;
+numiCase = 17;
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));

@@ -28,6 +28,7 @@ origState = get(0, 'DefaultFigureVisible');
 set(0, 'DefaultFigureVisible', 'off');
 
 addpath('C:\Users\mirco\Desktop\eeglab2026.1.0')
+eeglab nogui
 
 set(groot, 'defaultTextInterpreter', 'tex');
 set(groot, 'defaultAxesTickLabelInterpreter', 'tex');
@@ -85,7 +86,7 @@ for iSub = 1:nSubjects
     Fs_all(iSub) = trial0.srate;
 end
 
-assert(isscalar(Fs_all), ...
+assert(numel(unique(Fs_all)) == 1, ...
     'Sampling rate differs across subjects.');
 
 Fs = Fs_all(1);

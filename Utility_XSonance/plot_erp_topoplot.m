@@ -53,7 +53,7 @@ if ~isempty(cfg.save_path)
         f,...
         cfg.save_path,...
         'Resolution',300);
-
+    close(f);
 end
 
 OUT.figure = f;

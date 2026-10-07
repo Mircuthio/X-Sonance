@@ -146,6 +146,15 @@ plot_mmn_waveforms( ...
 %% ============================================================
 % ZOOM
 %% ============================================================
+% cfgMMN.diff_mode = {'dis_minus_con','con_minus_dis'};
+% cfgMMN.peak_mode = {'min','max'};
+% cfgMMN.plot_mode = {'all','conditions','diff','overlay'};
+cfgMMN.smooth_plot = false;
+cfgMMN.smooth_window = 5;
+
+cfgMMN.diff_mode = 'dis_minus_con'; %
+cfgMMN.peak_mode = 'min'; %
+cfgMMN.plot_mode = 'diff'; %
 
 plot_mmn_zoom( ...
     subj_list,...

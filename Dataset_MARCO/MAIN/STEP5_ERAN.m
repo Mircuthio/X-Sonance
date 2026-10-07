@@ -134,6 +134,15 @@ plot_eran_waveforms( ...
 %% ============================================================
 % ERAN ZOOM
 %% ============================================================
+% cfgERAN.diff_mode = {'dis_minus_con','con_minus_dis'};
+% cfgERAN.peak_mode = {'min','max'};
+% cfgERAN.plot_mode = {'all','conditions','diff','overlay'};
+cfgERAN.smooth_plot = false;
+cfgERAN.smooth_window = 5;
+
+cfgERAN.diff_mode = 'dis_minus_con'; %
+cfgERAN.peak_mode = 'min'; %
+cfgERAN.plot_mode = 'diff'; %
 
 plot_eran_zoom( ...
     subj_list,...

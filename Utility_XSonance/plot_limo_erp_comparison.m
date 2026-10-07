@@ -194,6 +194,7 @@ if ~isempty(cfg.save_path)
     gcf,...
     cfg.save_path,...
     'Resolution',300);
+    close(gcf);
 end
 
 OUT = struct();

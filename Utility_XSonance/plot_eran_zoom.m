@@ -11,7 +11,23 @@ zoomDir = fullfile(outdir,'Zoom');
 if ~exist(zoomDir,'dir')
     mkdir(zoomDir);
 end
+%% ============================================================
+% DEFAULTS
+%% ============================================================
+if ~isfield(cfgERAN, 'smooth_plot')
+    cfgERAN.smooth_plot = false;
+end
 
+if ~isfield(cfgERAN, 'smooth_window')
+    cfgERAN.smooth_window = 5;
+end
+
+assert( ...
+    isnumeric(cfgERAN.smooth_window) && ...
+    isscalar(cfgERAN.smooth_window) && ...
+    cfgERAN.smooth_window >= 1 && ...
+    mod(cfgERAN.smooth_window, 1) == 0, ...
+    'cfgERAN.smooth_window must be a positive integer');
 %% ============================================================
 % LOOP ROIs
 %% ============================================================
@@ -64,10 +80,10 @@ for r = 1:numel(cfgERAN.analysis_rois)
         nDis = numel(disTrials);
 
         ERPcon_trials = ...
-            zeros(nCon,nTime);
+            nan(nCon,nTime);
 
         ERPdis_trials = ...
-            zeros(nDis,nTime);
+            nan(nDis,nTime);
 
         for k = 1:nCon
 
@@ -92,10 +108,10 @@ for r = 1:numel(cfgERAN.analysis_rois)
         end
 
         ERP_CON(iSub,:) = ...
-            mean(ERPcon_trials,1);
+            mean(ERPcon_trials,1,'omitnan');
 
         ERP_DIS(iSub,:) = ...
-            mean(ERPdis_trials,1);
+            mean(ERPdis_trials,1,'omitnan');
 
     end
 
@@ -108,9 +124,46 @@ for r = 1:numel(cfgERAN.analysis_rois)
     ERPdis = ...
         mean(ERP_DIS,1,'omitnan');
 
-    ERPdiff = ...
-        ERPdis - ERPcon;
+    switch lower(cfgERAN.diff_mode)
 
+        case 'dis_minus_con'
+
+            ERPdiff = ERPdis - ERPcon;
+            diffLabel = 'Dissonant - Consonant';
+
+        case 'con_minus_dis'
+
+            ERPdiff = ERPcon - ERPdis;
+            diffLabel = 'Consonant - Dissonant';
+
+        otherwise
+
+            error('Unknown diff_mode');
+
+    end
+    
+    ERPdiff_raw = ERPdiff;
+    %% ========================================================
+    % OPTIONAL SMOOTHING FOR DISPLAY
+    %% ========================================================
+    if cfgERAN.smooth_plot
+
+        ERPcon  = movmean( ...
+            ERPcon, ...
+            cfgERAN.smooth_window, ...
+            'omitnan');
+
+        ERPdis  = movmean( ...
+            ERPdis, ...
+            cfgERAN.smooth_window, ...
+            'omitnan');
+
+        ERPdiff = movmean( ...
+            ERPdiff, ...
+            cfgERAN.smooth_window, ...
+            'omitnan');
+
+    end
     %% ========================================================
     % PEAK DIFFERENCE (LAST WINDOW)
     %% ========================================================
@@ -122,16 +175,72 @@ for r = 1:numel(cfgERAN.analysis_rois)
         timeVec <= peakWindow(2);
 
     diffWin = ...
-        ERPdiff(idxPeakWin);
+        ERPdiff_raw(idxPeakWin);
 
     timeWin = ...
         timeVec(idxPeakWin);
 
-    [peakAmp,idxPeak] = ...
-        min(diffWin);
+    switch lower(cfgERAN.peak_mode)
+
+        case 'min'
+
+            [peakAmp,idxPeak] = min(diffWin);
+
+        case 'max'
+
+            [peakAmp,idxPeak] = max(diffWin);
+
+        otherwise
+
+            error('Unknown peak_mode');
+
+    end
 
     peakLat = ...
         timeWin(idxPeak);
+    [~,peakPlotIdx] = ...
+        min(abs(timeVec - peakLat));
+
+    peakAmpPlot = ...
+        ERPdiff(peakPlotIdx);
+    %% ========================================================
+    % PLOT OPTIONS
+    %% ========================================================
+    showCon  = false;
+    showDis  = false;
+    showDiff = false;
+    showPeak = false;
+
+    switch lower(cfgERAN.plot_mode)
+
+        case 'all'
+
+            showCon  = true;
+            showDis  = true;
+            showDiff = true;
+            showPeak = true;
+
+        case 'conditions'
+
+            showCon  = true;
+            showDis  = true;
+
+        case 'diff'
+
+            showDiff = true;
+            showPeak = true;
+
+        case 'overlay'
+
+            showCon  = true;
+            showDis  = true;
+            showDiff = true;
+
+        otherwise
+
+            error('Unknown plot_mode');
+
+    end
 
     %% ========================================================
     % WINDOW LABELS
@@ -164,23 +273,23 @@ for r = 1:numel(cfgERAN.analysis_rois)
 
     hold on
 
+    allData = [ERPcon ERPdis ERPdiff];
+
     yL = [ ...
-        min([ERPcon ERPdis ERPdiff]) ...
-        max([ERPcon ERPdis ERPdiff])];
+        min(allData,[],'omitnan') ...
+        max(allData,[],'omitnan')];
 
     %% ========================================================
     % WINDOWS
     %% ========================================================
-    colors = ...
-        lines(nWindows);
+    colors = lines(nWindows);
 
     patchHandles = ...
         gobjects(nWindows,1);
 
     for iw = 1:nWindows
 
-        win = ...
-            cfgERAN.windows{iw};
+        win = cfgERAN.windows{iw};
 
         patchHandles(iw) = ...
             patch( ...
@@ -193,44 +302,66 @@ for r = 1:numel(cfgERAN.analysis_rois)
     end
 
     %% ========================================================
-    % ERP
+    % ERP CURVES
     %% ========================================================
-    hCon = plot( ...
-        timeVec,...
-        ERPcon,...
-        'LineWidth',2);
+    hCon  = [];
+    hDis  = [];
+    hDiff = [];
+    hPeak = [];
 
-    hDis = plot( ...
-        timeVec,...
-        ERPdis,...
-        'LineWidth',2);
+    if showCon
 
-    hDiff = plot( ...
-        timeVec,...
-        ERPdiff,...
-        'k',...
-        'LineWidth',2);
+        hCon = plot( ...
+            timeVec,...
+            ERPcon,...
+            'b',...
+            'LineWidth',2);
+
+    end
+
+    if showDis
+
+        hDis = plot( ...
+            timeVec,...
+            ERPdis,...
+            'r',...
+            'LineWidth',2);
+
+    end
+
+    if showDiff
+
+        hDiff = plot( ...
+            timeVec,...
+            ERPdiff,...
+            'k',...
+            'LineWidth',2);
+
+    end
 
     %% ========================================================
     % PEAK
     %% ========================================================
-    hPeak = plot( ...
-        peakLat,...
-        peakAmp,...
-        'rp',...
-        'MarkerFaceColor','r',...
-        'MarkerSize',8);
+    if showPeak
 
-    xline( ...
-        peakLat,...
-        'r--',...
-        'LineWidth',1.5);
+        hPeak = plot( ...
+            peakLat,...
+            peakAmpPlot,...
+            'rp',...
+            'MarkerFaceColor','r',...
+            'MarkerSize',10);
+
+        xline( ...
+            peakLat,...
+            'r--',...
+            'LineWidth',1.5);
+
+    end
 
     %% ========================================================
-    % REFERENCE
+    % REFERENCES
     %% ========================================================
     yline(0,'k:');
-
     xline(0,'k:');
 
     %% ========================================================
@@ -239,35 +370,73 @@ for r = 1:numel(cfgERAN.analysis_rois)
     xlim(cfgERAN.zoom_window)
 
     xlabel('Time (s)')
-
     ylabel('\muV')
 
-    title(sprintf( ...
-        '%s ERAN Zoom\nPeak ERAN = %.0f ms | %.2f \\muV', ...
-        format_tex_name(roiName),...
-        peakLat*1000,...
-        peakAmp));
+    if showPeak
+
+        title(sprintf( ...
+            '%s ERAN Zoom\nPeak = %.1f ms | %.2f \\muV',...
+            format_tex_name(roiName),...
+            peakLat*1000,...
+            peakAmp));
+
+    else
+
+        title(sprintf( ...
+            '%s ERAN Zoom',...
+            format_tex_name(roiName)));
+
+    end
 
     %% ========================================================
-    % LEGEND
+    % LEGEND - PREALLOCATION
     %% ========================================================
-    legendHandles = [ ...
-        patchHandles(:)' ...
-        hCon ...
-        hDis ...
-        hDiff ...
-        hPeak];
+    maxLegendItems = nWindows + 4;
 
-    legendLabels = [ ...
-        winLabels,...
-        {'Consonant',...
-         'Dissonant',...
-         'Difference',...
-         'Peak ERAN'}];
+    legendHandles = gobjects(1,maxLegendItems);
+    legendLabels  = cell(1,maxLegendItems);
+
+    nLegend = 0;
+
+    % Time windows
+    for iw = 1:nWindows
+        nLegend = nLegend + 1;
+        legendHandles(nLegend) = patchHandles(iw);
+        legendLabels{nLegend}  = winLabels{iw};
+    end
+
+    % ERP curves
+    if showCon
+        nLegend = nLegend + 1;
+        legendHandles(nLegend) = hCon;
+        legendLabels{nLegend}  = 'Consonant';
+    end
+
+    if showDis
+        nLegend = nLegend + 1;
+        legendHandles(nLegend) = hDis;
+        legendLabels{nLegend}  = 'Dissonant';
+    end
+
+    if showDiff
+        nLegend = nLegend + 1;
+        legendHandles(nLegend) = hDiff;
+        legendLabels{nLegend}  = diffLabel;
+    end
+
+    if showPeak
+        nLegend = nLegend + 1;
+        legendHandles(nLegend) = hPeak;
+        legendLabels{nLegend}  = 'Peak ERAN';
+    end
+
+    % Remove unused preallocated entries
+    legendHandles = legendHandles(1:nLegend);
+    legendLabels  = legendLabels(1:nLegend);
 
     legend( ...
-        legendHandles,...
-        legendLabels,...
+        legendHandles, ...
+        legendLabels, ...
         'Location','best');
 
     %% ========================================================
@@ -277,11 +446,13 @@ for r = 1:numel(cfgERAN.analysis_rois)
         gcf,...
         fullfile( ...
         zoomDir,...
-        sprintf('%s_ERAN_Zoom.png', ...
-        roiName)),...
+        sprintf( ...
+        '%s_ERAN_Zoom_%s.png',...
+        roiName,...
+        cfgERAN.plot_mode)),...
         'Resolution',300);
 
-    close
+    close(gcf)
 
 end
 
