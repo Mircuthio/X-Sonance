@@ -21,7 +21,7 @@ set(groot,...
 %% ============================================================
 
 step2_indir = ...
-'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
@@ -147,12 +147,91 @@ plot_n5_waveforms( ...
 % cfgN5.diff_mode = {'dis_minus_con','con_minus_dis'};
 % cfgN5.peak_mode = {'min','max'};
 % cfgN5.plot_mode = {'all','conditions','diff','overlay'};
-cfgN5.smooth_plot = false;
+%% ============================================================
+% N5 ZOOM
+%% ============================================================
+
+cfgN5.smooth_plot   = false;
 cfgN5.smooth_window = 5;
 
-cfgN5.diff_mode = 'dis_minus_con'; %
-cfgN5.peak_mode = 'min'; %
-cfgN5.plot_mode = 'diff'; %
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'conditions';
+cfgN5.diff_mode = 'dis_minus_con';
+cfgN5.peak_mode = 'min';
+
+plot_n5_zoom( ...
+    subj_list,...
+    cfgN5,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE N5)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'diff';
+cfgN5.diff_mode = 'dis_minus_con';
+cfgN5.peak_mode = 'min';
+
+plot_n5_zoom( ...
+    subj_list,...
+    cfgN5,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'diff';
+cfgN5.diff_mode = 'con_minus_dis';
+cfgN5.peak_mode = 'max';
+
+plot_n5_zoom( ...
+    subj_list,...
+    cfgN5,...
+    outdir);
+
+%% ============================================================
+% N5 ZOOM
+%% ============================================================
+
+cfgN5.smooth_plot   = true;
+cfgN5.smooth_window = 5;
+
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'conditions';
+cfgN5.diff_mode = 'con_minus_dis';
+cfgN5.peak_mode = 'max';
+
+plot_n5_zoom( ...
+    subj_list,...
+    cfgN5,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE N5)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'diff';
+cfgN5.diff_mode = 'dis_minus_con';
+cfgN5.peak_mode = 'min';
+
+plot_n5_zoom( ...
+    subj_list,...
+    cfgN5,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgN5.plot_mode = 'diff';
+cfgN5.diff_mode = 'con_minus_dis';
+cfgN5.peak_mode = 'max';
+
 plot_n5_zoom( ...
     subj_list,...
     cfgN5,...

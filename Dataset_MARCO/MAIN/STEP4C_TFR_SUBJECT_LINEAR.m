@@ -101,7 +101,7 @@ cfgTFR.method = 'channel_first';
 cfgTFR.conditions = {'Consonant', 'Dissonant'};
 cfgTFR.cond_field = 'eventLabel';
 
-cfgTFR.freqs = 1:1:90;
+cfgTFR.freqs = 1:0.25:90;
 cfgTFR.nCycles = 7;
 
 cfgTFR.baseline_win = [-0.200 -0.050];
@@ -353,12 +353,12 @@ for r = 1:numel(roiNames)
 
         figure('Color','w','Position',[100 100 1000 500]);
 
-        plot(time*1000,bandConTime,...
+        plot(time(idxPlotTime)*1000,bandConTime(idxPlotTime),...
             'LineWidth',2);
 
         hold on
 
-        plot(time*1000,bandDisTime,...
+        plot(time(idxPlotTime)*1000,bandDisTime(idxPlotTime),...
             'LineWidth',2);
 
         xline(0,'k--');
@@ -368,7 +368,7 @@ for r = 1:numel(roiNames)
         ylabel('\muV^2');
 
         title(sprintf('%s - %s', ...
-            roiName,bandName));
+            format_tex_name(roiName),bandName));
 
         legend('Consonant','Dissonant');
 
@@ -383,7 +383,7 @@ for r = 1:numel(roiNames)
 
         figure('Color','w','Position',[100 100 1000 500]);
 
-        plot(time*1000,bandDifTime,...
+        plot(time(idxPlotTime)*1000,bandDifTime(idxPlotTime),...
             'k','LineWidth',2);
 
         hold on
@@ -395,7 +395,7 @@ for r = 1:numel(roiNames)
         ylabel('\muV^2');
 
         title(sprintf('%s Difference - %s', ...
-            bandName,roiName));
+            bandName,format_tex_name(roiName)));
 
         grid on
 
@@ -453,7 +453,7 @@ for r = 1:numel(roiNames)
         title('Difference')
 
         sgtitle(sprintf('%s - %s', ...
-            roiName,bandName));
+            format_tex_name(roiName),bandName));
 
         saveas(gcf,...
             fullfile(bandFigDir,...

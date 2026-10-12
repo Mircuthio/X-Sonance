@@ -11,7 +11,7 @@ cartella = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\MAIN';
 %     };
 
 % File txt finale
-fileOutput = fullfile(cartella, 'MAIN_Script_30_09.txt');
+fileOutput = fullfile(cartella, 'MAIN_Script_12_10.txt');
 
 fidOut = fopen(fileOutput, 'w');
 if fidOut == -1

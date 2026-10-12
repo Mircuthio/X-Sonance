@@ -21,7 +21,7 @@ set(groot,...
 %% ============================================================
 
 step2_indir = ...
-'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
@@ -149,12 +149,90 @@ plot_mmn_waveforms( ...
 % cfgMMN.diff_mode = {'dis_minus_con','con_minus_dis'};
 % cfgMMN.peak_mode = {'min','max'};
 % cfgMMN.plot_mode = {'all','conditions','diff','overlay'};
-cfgMMN.smooth_plot = false;
+%% ============================================================
+% MNN ZOOM
+%% ============================================================
+
+cfgMMN.smooth_plot   = false;
 cfgMMN.smooth_window = 5;
 
-cfgMMN.diff_mode = 'dis_minus_con'; %
-cfgMMN.peak_mode = 'min'; %
-cfgMMN.plot_mode = 'diff'; %
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'conditions';
+cfgMMN.diff_mode = 'dis_minus_con';
+cfgMMN.peak_mode = 'min';
+
+plot_mmn_zoom( ...
+    subj_list,...
+    cfgMMN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE MNN)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'diff';
+cfgMMN.diff_mode = 'dis_minus_con';
+cfgMMN.peak_mode = 'min';
+
+plot_mmn_zoom( ...
+    subj_list,...
+    cfgMMN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'diff';
+cfgMMN.diff_mode = 'con_minus_dis';
+cfgMMN.peak_mode = 'max';
+
+plot_mmn_zoom( ...
+    subj_list,...
+    cfgMMN,...
+    outdir);
+
+%% ============================================================
+% MNN ZOOM
+%% ============================================================
+
+cfgMMN.smooth_plot   = true;
+cfgMMN.smooth_window = 5;
+
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'conditions';
+cfgMMN.diff_mode = 'dis_minus_con';
+cfgMMN.peak_mode = 'min';
+
+plot_mmn_zoom( ...
+    subj_list,...
+    cfgMMN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE MNN)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'diff';
+cfgMMN.diff_mode = 'dis_minus_con';
+cfgMMN.peak_mode = 'min';
+
+plot_mmn_zoom( ...
+    subj_list,...
+    cfgMMN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgMMN.plot_mode = 'diff';
+cfgMMN.diff_mode = 'con_minus_dis';
+cfgMMN.peak_mode = 'max';
 
 plot_mmn_zoom( ...
     subj_list,...
@@ -172,7 +250,7 @@ plot_mmn_metrics( ...
     outdir);
 
 %% ============================================================
-% ERAN VS MMN
+% MNN VS MMN
 %% ============================================================
 
 plot_eran_mmn_comparison( ...

@@ -53,7 +53,7 @@ assert(~isempty(subj_list), ...
 % 4. LIMO input preparation
 % comparisonNameList =  {'Consonance','Difference',...
 %     'Goal','NoGoal','Control','All'};
-comparisonNameList =  {'Consonance'};
+comparisonNameList =  {'Consonance','All'};
 for i=1:numel(comparisonNameList)
     try
         cfg = struct();
@@ -114,12 +114,12 @@ for i=1:numel(comparisonNameList)
         %% ------------------------------------------------------------
         cfgPlot = struct();
 
-        cfgPlot.smooth_plot = false;
+        cfgPlot.smooth_plot = true;
         cfgPlot.smooth_window = 5;
 
         cfgDiff = struct();
 
-        cfgDiff.smooth_plot = false;
+        cfgDiff.smooth_plot = true;
         cfgDiff.smooth_window = 5;
 
         %% ============================================================
@@ -267,7 +267,7 @@ for i=1:numel(comparisonNameList)
                     end
                     ERP_subj.(subj_id).(roiName) = roi_erp;
                     % ERP PLOT
-                    cfgPlot = struct();
+
                     if strcmp(cfg.comparisonName,'All')
                         cfgPlot.line_colors = [
                             0.00 0.35 0.90 ;   % ConsonantGOAL
@@ -287,7 +287,7 @@ for i=1:numel(comparisonNameList)
                     cfgPlot.show_error = true;
                     cfgPlot.error_type = 'sem';
                     cfgPlot.error_data = roi_erp.grand_se;
-                    cfgPlot.title_str = sprintf('ERP %s - %s',string(subj_curr.subj_id),roiName);
+                    cfgPlot.title_str = sprintf('ERP %s - %s',string(subj_curr.subj_id),format_tex_name(roiName));
                     safeID = regexprep(string(subj_curr.subj_id),'[^\w]','_');
                     save_dir = fullfile(step3_outdir, 'ERP_plots', roiName);
                     if ~exist(save_dir, 'dir'), mkdir(save_dir); end
@@ -358,7 +358,6 @@ for i=1:numel(comparisonNameList)
             roi_erp.roiName = roiName;
             ERP_Pooled.(roiName) = roi_erp;
             % ERP Pooled PLOT
-            cfgPlot = struct();
             if strcmp(cfg.comparisonName,'All')
 
                 cfgPlot.line_colors = [
@@ -409,7 +408,6 @@ for i=1:numel(comparisonNameList)
             roi_erp.roiName = roiName;
             ERP_Group.(roiName) = roi_erp;
             % ERP Group PLOT
-            cfgPlot = struct();
             if strcmp(cfg.comparisonName,'All')
 
                 cfgPlot.line_colors = [

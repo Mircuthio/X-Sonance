@@ -21,7 +21,7 @@ set(groot,...
 %% ============================================================
 
 step2_indir = ...
-'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
 
 load(fullfile(step2_indir,'subj_list.mat'));
 %% ============================================================
@@ -46,10 +46,13 @@ cfgERAN.conditions = { ...
 
 cfgERAN.cond_field = 'eventLabel';
 
+% cfgERAN.analysis_rois = { ...
+%     'ERAN',...
+%     'ERAN_RIGHT',...
+%     'ERAN_CORE'};
+
 cfgERAN.analysis_rois = { ...
-    'ERAN',...
-    'ERAN_RIGHT',...
-    'ERAN_CORE'};
+    'Generic'};
 
 cfgERAN.windows = { ...
     [0.08 0.15] ...
@@ -137,12 +140,89 @@ plot_eran_waveforms( ...
 % cfgERAN.diff_mode = {'dis_minus_con','con_minus_dis'};
 % cfgERAN.peak_mode = {'min','max'};
 % cfgERAN.plot_mode = {'all','conditions','diff','overlay'};
-cfgERAN.smooth_plot = false;
+
+%% ============================================================
+% ERAN ZOOM
+%% ============================================================
+
+cfgERAN.smooth_plot   = false;
 cfgERAN.smooth_window = 5;
 
-cfgERAN.diff_mode = 'dis_minus_con'; %
-cfgERAN.peak_mode = 'min'; %
-cfgERAN.plot_mode = 'diff'; %
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'conditions';
+cfgERAN.diff_mode = 'dis_minus_con';
+cfgERAN.peak_mode = 'min';
+
+plot_eran_zoom( ...
+    subj_list,...
+    cfgERAN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE ERAN)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'diff';
+cfgERAN.diff_mode = 'dis_minus_con';
+cfgERAN.peak_mode = 'min';
+
+plot_eran_zoom( ...
+    subj_list,...
+    cfgERAN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'diff';
+cfgERAN.diff_mode = 'con_minus_dis';
+cfgERAN.peak_mode = 'max';
+
+plot_eran_zoom( ...
+    subj_list,...
+    cfgERAN,...
+    outdir);
+
+%% ============================================================
+% ERAN ZOOM
+%% ============================================================
+
+cfgERAN.smooth_plot   = true;
+cfgERAN.smooth_window = 5;
+
+%% ------------------------------------------------------------
+% CONDITIONS ONLY
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'conditions';
+
+plot_eran_zoom( ...
+    subj_list,...
+    cfgERAN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (NEGATIVE ERAN)
+% Dissonant - Consonant
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'diff';
+cfgERAN.diff_mode = 'dis_minus_con';
+cfgERAN.peak_mode = 'min';
+
+plot_eran_zoom( ...
+    subj_list,...
+    cfgERAN,...
+    outdir);
+
+%% ------------------------------------------------------------
+% DIFFERENCE (POSITIVE INVERTED VIEW)
+% Consonant - Dissonant
+%% ------------------------------------------------------------
+cfgERAN.plot_mode = 'diff';
+cfgERAN.diff_mode = 'con_minus_dis';
+cfgERAN.peak_mode = 'max';
 
 plot_eran_zoom( ...
     subj_list,...

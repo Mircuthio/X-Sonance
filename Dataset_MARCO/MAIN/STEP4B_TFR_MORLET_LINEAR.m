@@ -113,56 +113,138 @@ assert(time0(1) <= -0.2 && time0(end) >= 1.0, ...
     'Epoch does not include [-200, 1000] ms.');
 
 %% =========================================================================
-% Configuration
+% ANALYSIS CONFIGURATION
 %% =========================================================================
 
 cfgTFR = struct();
 
-% CRITICAL: channel-specific TFR before ROI averaging
+% -------------------------------------------------------------------------
+% PROCESSING
+% -------------------------------------------------------------------------
+
 cfgTFR.method = 'channel_first';
 
-cfgTFR.conditions = {'Consonant', 'Dissonant'};
+cfgTFR.conditions = { ...
+    'Consonant',...
+    'Dissonant'};
+
 cfgTFR.cond_field = 'eventLabel';
 
-cfgTFR.freqs = 30:1:60;
+% -------------------------------------------------------------------------
+% FREQUENCY ANALYSIS
+% -------------------------------------------------------------------------
+
+cfgTFR.freqs = 1:1:90;
 cfgTFR.nCycles = 7;
 
-% Park prestimulus baseline
 cfgTFR.baseline_win = [-0.200 -0.050];
 
-% Main Park gamma window
-cfgTFR.gamma_freq_win = [30 60];
-cfgTFR.gamma_time_win = [0.100 0.250];
-
-% Visualization only; full epoch remains used for TFR
 cfgTFR.plot_time_win = [-0.200 1.000];
 
-% Multiple descriptive/confirmatory topography windows
-cfgTFR.topo_windows = struct();
-
-cfgTFR.topo_windows.Park_100_250 = [0.100 0.250];
-cfgTFR.topo_windows.ParkPeak_150_200 = [0.150 0.200];
-cfgTFR.topo_windows.Early_170_220 = [0.170 0.220];
-cfgTFR.topo_windows.Post_220_320 = [0.220 0.320];
-cfgTFR.topo_windows.Late_450_550 = [0.450 0.550];
-
-cfgTFR.srate = Fs;
-cfgTFR.time = time0;
 cfgTFR.save_trial_level = false;
 
+cfgTFR.srate = Fs;
+cfgTFR.time  = time0;
+
+% -------------------------------------------------------------------------
+% ACTIVE ROIS
+% -------------------------------------------------------------------------
+
+cfgTFR.analysis_rois = { ...
+    'ERAN_CORE',...
+    'MMN',...
+    'FrontoCentral',...
+    'N5_CENTRAL'};
+
+% -------------------------------------------------------------------------
+% ACTIVE BANDS
+% -------------------------------------------------------------------------
+
+cfgTFR.activeBands = { ...
+    'Delta',...
+    'Theta',...
+    'Alpha',...
+    'BetaLow',...
+    'BetaHigh',...
+    'GammaLow',...
+    'GammaHigh'};
+% -------------------------------------------------------------------------
+% REFERENCE WINDOW
+% -------------------------------------------------------------------------
+
+cfgTFR.reference_freq_win = [30 60];
+cfgTFR.reference_time_win = [0.100 0.250];
+
+cfgTFR.summary_windows = struct();
+
+cfgTFR.summary_windows.Global   = [0.00 0.80];
+cfgTFR.summary_windows.EarlyNeg = [0.17 0.22];
+cfgTFR.summary_windows.Rebound  = [0.22 0.32];
+cfgTFR.summary_windows.Late     = [0.45 0.55];
+%% ------------------------------------------------------------------------
+% BAND DEFINITIONS
+%% ------------------------------------------------------------------------
+
+BandRanges = struct();
+
+BandRanges.Delta     = [1 4];
+BandRanges.Theta    = [4 8];
+BandRanges.Alpha    = [8 13];
+BandRanges.BetaLow  = [13 20];
+BandRanges.BetaHigh = [20 30];
+BandRanges.GammaLow  = [30 40];
+BandRanges.GammaHigh = [40 90];
+%% =========================================================================
+% PLOT CONFIGURATION
+%% =========================================================================
+
+cfgPlot = struct();
+
+% -------------------------------------------------------------------------
+% MAIN FIGURES
+% -------------------------------------------------------------------------
+
+cfgPlot.groupTFR        = true;
+cfgPlot.bandTimeCourses = true;
+cfgPlot.topoplots       = true;
+
+% -------------------------------------------------------------------------
+% OPTIONAL FIGURES
+% -------------------------------------------------------------------------
+
+cfgPlot.differenceOnly = true;
+
+% -------------------------------------------------------------------------
+% FILE MANAGEMENT
+% -------------------------------------------------------------------------
+
+cfgPlot.saveFigures  = true;
+cfgPlot.closeFigures = true;
+
+% -------------------------------------------------------------------------
+% TOPO WINDOWS
+% -------------------------------------------------------------------------
+
+cfgPlot.windows = struct();
+
+cfgPlot.windows.Park_100_250      = [0.100 0.250];
+cfgPlot.windows.ParkPeak_150_200  = [0.150 0.200];
+cfgPlot.windows.Early_170_220     = [0.170 0.220];
+cfgPlot.windows.Post_220_320      = [0.220 0.320];
+cfgPlot.windows.Late_450_550      = [0.450 0.550];
 %% =========================================================================
 % ROI definitions
 %% =========================================================================
 
 % MAIN_ROI_TFR
-% 
+%
 % cfgTFR.rois = ParkROI;
 
 MAIN_ROI
 
 cfgTFR.rois = ROI;
 
-roiNames = fieldnames(cfgTFR.rois);
+roiNames = cfgTFR.analysis_rois;
 
 assert(~isempty(roiNames), ...
     'No ROI defined in ParkROI or ROI.');
@@ -218,11 +300,11 @@ for iSub = 1:nSubjects
         end
 
         assert(isequal(size(roi_tfr.Consonant.power), ...
-                [numel(cfgTFR.freqs), numel(time0)]), ...
+            [numel(cfgTFR.freqs), numel(time0)]), ...
             'Unexpected Consonant TFR dimensions.');
 
         assert(isequal(size(roi_tfr.Dissonant.power), ...
-                [numel(cfgTFR.freqs), numel(time0)]), ...
+            [numel(cfgTFR.freqs), numel(time0)]), ...
             'Unexpected Dissonant TFR dimensions.');
 
         TFR_Subj.(subjID).(roiName) = roi_tfr;
@@ -255,9 +337,9 @@ for r = 1:numel(roiNames)
     groupData = TFR_Group.(roiName);
 
     assert(isfield(groupData, 'Consonant') && ...
-           isfield(groupData, 'Dissonant') && ...
-           isfield(groupData, 'Difference'), ...
-           '%s: missing condition/difference field.', roiName);
+        isfield(groupData, 'Dissonant') && ...
+        isfield(groupData, 'Difference'), ...
+        '%s: missing condition/difference field.', roiName);
 
     fprintf('Built ROI: %s | [%d freq x %d time]\n', ...
         roiName, ...
@@ -305,10 +387,10 @@ fprintf('Conditions: [%.4f, %.4f]\n', ...
 fprintf('Difference: ±%.4f\n', differenceAbsMax);
 
 %% =========================================================================
-% ROI figures and gamma time courses
+% ROI figures and band time courses
 %% =========================================================================
 
-gammaStats = struct();
+BandStats = struct();
 
 for r = 1:numel(roiNames)
 
@@ -327,56 +409,68 @@ for r = 1:numel(roiNames)
         '%s: time dimensions mismatch.', roiName);
 
     % ---------------------------------------------------------------------
-    % Gamma time courses
+    % Band time courses
     % ---------------------------------------------------------------------
-    idxGamma = freq >= cfgTFR.gamma_freq_win(1) & ...
-               freq <= cfgTFR.gamma_freq_win(2);
+    for b = 1:numel(cfgTFR.activeBands)
 
-    assert(any(idxGamma), ...
-        '%s: no samples in gamma band.', roiName);
+        bandName = cfgTFR.activeBands{b};
 
-    gammaConTime = mean(conMap(idxGamma,:), 1, 'omitnan');
-    gammaDisTime = mean(disMap(idxGamma,:), 1, 'omitnan');
-    gammaDifTime = mean(difMap(idxGamma,:), 1, 'omitnan');
+        bandRange = BandRanges.(bandName);
 
-    idxBaseline = time >= cfgTFR.baseline_win(1) & ...
-                  time <= cfgTFR.baseline_win(2);
+        idxBand = ...
+            freq >= bandRange(1) & ...
+            freq <= bandRange(2);
+        bandConTime = ...
+            mean(conMap(idxBand,:),1,'omitnan');
 
-    fprintf('\nBaseline check — %s\n', roiName);
-    fprintf('Consonant gamma baseline mean: %.8f µV^2\n', ...
-        mean(gammaConTime(idxBaseline), 'omitnan'));
-    fprintf('Dissonant gamma baseline mean: %.8f µV^2\n', ...
-        mean(gammaDisTime(idxBaseline), 'omitnan'));
+        bandDisTime = ...
+            mean(disMap(idxBand,:),1,'omitnan');
 
-    idxStatTime = time >= cfgTFR.gamma_time_win(1) & ...
-                  time <= cfgTFR.gamma_time_win(2);
+        bandDifTime = ...
+            mean(difMap(idxBand,:),1,'omitnan');
 
-    gammaStats.(roiName).TimeCourse.time = time;
-    gammaStats.(roiName).TimeCourse.Consonant = gammaConTime;
-    gammaStats.(roiName).TimeCourse.Dissonant = gammaDisTime;
-    gammaStats.(roiName).TimeCourse.Difference = gammaDifTime;
+        BandStats.(roiName).TimeCourse.(bandName).time = time;
 
-    gammaStats.(roiName).Window = cfgTFR.gamma_time_win;
-    gammaStats.(roiName).Consonant = ...
-        mean(gammaConTime(idxStatTime), 'omitnan');
-    gammaStats.(roiName).Dissonant = ...
-        mean(gammaDisTime(idxStatTime), 'omitnan');
-    gammaStats.(roiName).Difference = ...
-        mean(gammaDifTime(idxStatTime), 'omitnan');
+        BandStats.(roiName).TimeCourse.(bandName).Consonant = ...
+            bandConTime;
 
-    fprintf('\n%s | 30-60 Hz, 100-250 ms\n', roiName);
-    fprintf('  Consonant : %.5f µV^2\n', ...
-        gammaStats.(roiName).Consonant);
-    fprintf('  Dissonant : %.5f µV^2\n', ...
-        gammaStats.(roiName).Dissonant);
-    fprintf('  Difference: %.5f µV^2\n', ...
-        gammaStats.(roiName).Difference);
+        BandStats.(roiName).TimeCourse.(bandName).Dissonant = ...
+            bandDisTime;
 
+        BandStats.(roiName).TimeCourse.(bandName).Difference = ...
+            bandDifTime;
+
+        windowNames = fieldnames(cfgTFR.summary_windows);
+
+        for w = 1:numel(windowNames)
+
+            windowName = windowNames{w};
+
+            currentWindow = ...
+                cfgTFR.summary_windows.(windowName);
+
+            idxWindow = ...
+                time >= currentWindow(1) & ...
+                time <= currentWindow(2);
+
+            BandStats.(roiName).(windowName).(bandName).Consonant = ...
+                mean(bandConTime(idxWindow), ...
+                'omitnan');
+
+            BandStats.(roiName).(windowName).(bandName).Dissonant = ...
+                mean(bandDisTime(idxWindow), ...
+                'omitnan');
+
+            BandStats.(roiName).(windowName).(bandName).Difference = ...
+                mean(bandDifTime(idxWindow), ...
+                'omitnan');
+        end
+    end
     % ---------------------------------------------------------------------
     % TFR panels shown only from -200 to 1000 ms
     % ---------------------------------------------------------------------
     idxPlotTime = time >= cfgTFR.plot_time_win(1) & ...
-                  time <= cfgTFR.plot_time_win(2);
+        time <= cfgTFR.plot_time_win(2);
 
     assert(any(idxPlotTime), ...
         '%s: no samples in display range.', roiName);
@@ -386,156 +480,191 @@ for r = 1:numel(roiNames)
     conMapPlot = conMap(:, idxPlotTime);
     disMapPlot = disMap(:, idxPlotTime);
     difMapPlot = difMap(:, idxPlotTime);
+    if cfgPlot.groupTFR
+        fig = figure('Color', 'w', ...
+            'Position', [100 100 1050 900]);
 
-    fig = figure('Color', 'w', ...
-        'Position', [100 100 1050 900]);
+        subplot(3,1,1)
+        imagesc(timePlot, freq, conMapPlot)
+        axis xy
+        clim(conditionCLim)
+        colorbar
+        xline(0, 'k--', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(1) * 1000, 'k:', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(2) * 1000, 'k:', 'LineWidth', 1)
+        xlim(cfgTFR.plot_time_win * 1000)
+        xlabel('Time (ms)')
+        ylabel('Frequency (Hz)')
+        title(sprintf('%s — Consonant', format_tex_name(roiName)))
 
-    subplot(3,1,1)
-    imagesc(timePlot, freq, conMapPlot)
-    axis xy
-    clim(conditionCLim)
-    colorbar
-    xline(0, 'k--', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(1) * 1000, 'k:', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(2) * 1000, 'k:', 'LineWidth', 1)
-    xlim(cfgTFR.plot_time_win * 1000)
-    xlabel('Time (ms)')
-    ylabel('Frequency (Hz)')
-    title(sprintf('%s — Consonant', format_tex_name(roiName)))
+        subplot(3,1,2)
+        imagesc(timePlot, freq, disMapPlot)
+        axis xy
+        clim(conditionCLim)
+        colorbar
+        xline(0, 'k--', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(1) * 1000, 'k:', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(2) * 1000, 'k:', 'LineWidth', 1)
+        xlim(cfgTFR.plot_time_win * 1000)
+        xlabel('Time (ms)')
+        ylabel('Frequency (Hz)')
+        title(sprintf('%s — Dissonant', format_tex_name(roiName)))
 
-    subplot(3,1,2)
-    imagesc(timePlot, freq, disMapPlot)
-    axis xy
-    clim(conditionCLim)
-    colorbar
-    xline(0, 'k--', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(1) * 1000, 'k:', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(2) * 1000, 'k:', 'LineWidth', 1)
-    xlim(cfgTFR.plot_time_win * 1000)
-    xlabel('Time (ms)')
-    ylabel('Frequency (Hz)')
-    title(sprintf('%s — Dissonant', format_tex_name(roiName)))
+        subplot(3,1,3)
+        imagesc(timePlot, freq, difMapPlot)
+        axis xy
+        clim([-differenceAbsMax differenceAbsMax])
+        colorbar
+        xline(0, 'k--', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(1) * 1000, 'k:', 'LineWidth', 1)
+        xline(cfgTFR.reference_time_win(2) * 1000, 'k:', 'LineWidth', 1)
+        xlim(cfgTFR.plot_time_win * 1000)
+        xlabel('Time (ms)')
+        ylabel('Frequency (Hz)')
+        title(sprintf('%s — Consonant minus Dissonant', ...
+            format_tex_name(roiName)))
 
-    subplot(3,1,3)
-    imagesc(timePlot, freq, difMapPlot)
-    axis xy
-    clim([-differenceAbsMax differenceAbsMax])
-    colorbar
-    xline(0, 'k--', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(1) * 1000, 'k:', 'LineWidth', 1)
-    xline(cfgTFR.gamma_time_win(2) * 1000, 'k:', 'LineWidth', 1)
-    xlim(cfgTFR.plot_time_win * 1000)
-    xlabel('Time (ms)')
-    ylabel('Frequency (Hz)')
-    title(sprintf('%s — Consonant minus Dissonant', ...
-        format_tex_name(roiName)))
+        sgtitle('Induced gamma power, baseline-corrected (\muV^2)')
 
-    sgtitle('Induced gamma power, baseline-corrected (\muV^2)')
+        saveas(fig, fullfile(figDir, ...
+            sprintf('TFR_ChannelFirst_%s.png', roiName)));
 
-    saveas(fig, fullfile(figDir, ...
-        sprintf('TFR_ChannelFirst_%s.png', roiName)));
+        close(fig)
+    end
+    if cfgPlot.bandTimeCourses
 
-    close(fig)
+        for b = 1:numel(cfgTFR.activeBands)
 
-    % ---------------------------------------------------------------------
-    % Plot 1: consonant vs dissonant
-    % ---------------------------------------------------------------------
-    fig = figure('Color', 'w', ...
-        'Position', [100 100 1000 500]);
+            bandName = cfgTFR.activeBands{b};
+            bandRange = BandRanges.(bandName);
+            bandConTime = ...
+                BandStats.(roiName).TimeCourse.(bandName).Consonant;
 
-    plot(time * 1000, gammaConTime, ...
-        'LineWidth', 2, ...
-        'Color', [0.75 0.20 0.20]);
-    hold on
+            bandDisTime = ...
+                BandStats.(roiName).TimeCourse.(bandName).Dissonant;
 
-    plot(time * 1000, gammaDisTime, ...
-        'LineWidth', 2, ...
-        'Color', [0.20 0.25 0.70]);
+            bandDifTime = ...
+                BandStats.(roiName).TimeCourse.(bandName).Difference;
+            % ---------------------------------------------------------------------
+            % Plot 1: consonant vs dissonant
+            % ---------------------------------------------------------------------
+            fig = figure('Color', 'w', ...
+                'Position', [100 100 1000 500]);
 
-    xline(0, 'k--', 'LineWidth', 1);
-    yline(0, 'k--', 'LineWidth', 1);
-    xlim(cfgTFR.plot_time_win * 1000)
+            plot(timePlot, bandConTime(idxPlotTime), ...
+                'LineWidth', 2, ...
+                'Color', [0.75 0.20 0.20]);
+            hold on
 
-    xlabel('Time (ms)')
-    ylabel('Induced gamma power change (\muV^2)')
-    legend('Consonant chord', 'Dissonant chord', ...
-        'Location', 'northeast')
-    title(sprintf('Gamma time course (30-60 Hz) — %s', ...
-        format_tex_name(roiName)))
-    grid on
-    box off
+            plot(timePlot, bandDisTime(idxPlotTime), ...
+                'LineWidth', 2, ...
+                'Color', [0.20 0.25 0.70]);
 
-    saveas(fig, fullfile(figDir, ...
-        sprintf('Gamma_ConDis_ChannelFirst_%s.png', roiName)));
+            xline(0, 'k--', 'LineWidth', 1);
+            yline(0, 'k--', 'LineWidth', 1);
+            xlim(cfgTFR.plot_time_win * 1000)
 
-    close(fig)
+            xlabel('Time (ms)')
+            ylabel('Induced gamma power change (\muV^2)')
+            legend('Consonant chord', 'Dissonant chord', ...
+                'Location', 'northeast')
+            title(sprintf('%s time course (%d-%d Hz) - %s', ...
+                bandName,...
+                bandRange(1),...
+                bandRange(2),...
+                format_tex_name(roiName)))
+            grid on
+            box off
 
-    % ---------------------------------------------------------------------
-    % Plot 2: consonant vs dissonant vs difference
-    % ---------------------------------------------------------------------
-    fig = figure('Color', 'w', ...
-        'Position', [100 100 1000 500]);
+            saveas(fig, fullfile(figDir, ...
+                sprintf( ...
+                '%s_ConDis_ChannelFirst_%s.png', ...
+                bandName,...
+                roiName)));
 
-    plot(time * 1000, gammaConTime, ...
-        'LineWidth', 2, ...
-        'Color', [0.75 0.20 0.20]);
-    hold on
+            close(fig)
 
-    plot(time * 1000, gammaDisTime, ...
-        'LineWidth', 2, ...
-        'Color', [0.20 0.25 0.70]);
+            % ---------------------------------------------------------------------
+            % Plot 2: consonant vs dissonant vs difference
+            % ---------------------------------------------------------------------
+            fig = figure('Color', 'w', ...
+                'Position', [100 100 1000 500]);
 
-    plot(time * 1000, gammaDifTime, ...
-        'k--', ...
-        'LineWidth', 1.8);
+            plot(timePlot, bandConTime(idxPlotTime), ...
+                'LineWidth', 2, ...
+                'Color', [0.75 0.20 0.20]);
+            hold on
 
-    xline(0, 'k--', 'LineWidth', 1);
-    yline(0, 'k--', 'LineWidth', 1);
-    xlim(cfgTFR.plot_time_win * 1000)
+            plot(timePlot, bandDisTime(idxPlotTime), ...
+                'LineWidth', 2, ...
+                'Color', [0.20 0.25 0.70]);
 
-    xlabel('Time (ms)')
-    ylabel('Induced gamma power change (\muV^2)')
-    legend('Consonant chord', 'Dissonant chord', ...
-        'Consonant - Dissonant', ...
-        'Location', 'northeast')
-    title(sprintf('Gamma time course (30-60 Hz) — %s', ...
-        format_tex_name(roiName)))
-    grid on
-    box off
+            plot(timePlot, bandDifTime(idxPlotTime), ...
+                'k--', ...
+                'LineWidth', 1.8);
 
-    saveas(fig, fullfile(figDir, ...
-        sprintf('Gamma_ConDisDiff_ChannelFirst_%s.png', roiName)));
+            xline(0, 'k--', 'LineWidth', 1);
+            yline(0, 'k--', 'LineWidth', 1);
+            xlim(cfgTFR.plot_time_win * 1000)
 
-    close(fig)
+            xlabel('Time (ms)')
+            ylabel('Induced gamma power change (\muV^2)')
+            legend('Consonant chord', 'Dissonant chord', ...
+                'Consonant - Dissonant', ...
+                'Location', 'northeast')
+            title(sprintf('%s time course (%d-%d Hz) - %s', ...
+                bandName,...
+                bandRange(1),...
+                bandRange(2),...
+                format_tex_name(roiName)))
+            grid on
+            box off
 
-    % ---------------------------------------------------------------------
-    % Plot 3: difference only
-    % ---------------------------------------------------------------------
-    fig = figure('Color', 'w', ...
-        'Position', [100 100 1000 500]);
+            saveas(fig, fullfile(figDir, ...
+                sprintf( ...
+                '%s_ConDisDiff_ChannelFirst_%s.png', ...
+                bandName,...
+                roiName)));
 
-    plot(time * 1000, gammaDifTime, ...
-        'k-', ...
-        'LineWidth', 2);
-    hold on
+            close(fig)
 
-    xline(0, 'k--', 'LineWidth', 1);
-    yline(0, 'k--', 'LineWidth', 1);
-    xlim(cfgTFR.plot_time_win * 1000)
+            % ---------------------------------------------------------------------
+            % Plot 3: difference only
+            % ---------------------------------------------------------------------
+            if cfgPlot.differenceOnly
+                fig = figure('Color', 'w', ...
+                    'Position', [100 100 1000 500]);
 
-    xlabel('Time (ms)')
-    ylabel('Consonant - Dissonant (\muV^2)')
-    title(sprintf('Gamma difference time course (30-60 Hz) — %s', ...
-        format_tex_name(roiName)))
-    grid on
-    box off
+                plot(timePlot, bandDifTime(idxPlotTime), ...
+                    'k-', ...
+                    'LineWidth', 2);
+                hold on
 
-    saveas(fig, fullfile(figDir, ...
-        sprintf('Gamma_Difference_ChannelFirst_%s.png', roiName)));
+                xline(0, 'k--', 'LineWidth', 1);
+                yline(0, 'k--', 'LineWidth', 1);
+                xlim(cfgTFR.plot_time_win * 1000)
 
-    close(fig)
+                xlabel('Time (ms)')
+                ylabel('Consonant - Dissonant (\muV^2)')
+                title(sprintf('%s difference time course (%d-%d Hz) - %s', ...
+                    bandName,...
+                    bandRange(1),...
+                    bandRange(2),...
+                    format_tex_name(roiName)))
+                grid on
+                box off
+
+                saveas(fig, fullfile(figDir, ...
+                    sprintf( ...
+                    '%s_Difference_ChannelFirst_%s.png', ...
+                    bandName,...
+                    roiName)));
+
+                close(fig)
+            end
+        end
+    end
 end
-
 %% =========================================================================
 % CHANNEL-LEVEL TOPOPLOTS
 %
@@ -543,208 +672,217 @@ end
 % mathematically identical for these maps. This block is retained to produce
 % an independent saved output for the channel-first analysis.
 %% =========================================================================
-
-fprintf('\n=====================================\n');
-fprintf('CHANNEL-LEVEL TOPOPLOTS\n');
-fprintf('Frequency range: %d-%d Hz\n', ...
-    cfgTFR.gamma_freq_win(1), ...
-    cfgTFR.gamma_freq_win(2));
-fprintf('=====================================\n');
-
-allChanLocs = subj_list(1).data_trials(1).chanlocs;
-allChanLabels = {allChanLocs.labels};
-
-nChan = numel(allChanLabels);
-nTime = numel(cfgTFR.time);
-
-assert(nChan > 0, ...
-    'No channel locations found.');
-
-assert(isfield(allChanLocs, 'X') || isfield(allChanLocs, 'theta'), ...
-    ['Channel coordinates are missing. ' ...
-     'chanlocs must contain spatial information for topoplot.']);
-
-idxTopoFreq = cfgTFR.freqs >= cfgTFR.gamma_freq_win(1) & ...
-              cfgTFR.freqs <= cfgTFR.gamma_freq_win(2);
-
-assert(any(idxTopoFreq), ...
-    'No frequency samples in requested topoplot band.');
-
-topoConGammaTime = nan(nSubjects, nChan, nTime, 'single');
-topoDisGammaTime = nan(nSubjects, nChan, nTime, 'single');
-
-for iSub = 1:nSubjects
-
-    subj_curr = subj_list(iSub);
-
-    subjID = matlab.lang.makeValidName(char(subj_curr.subj_id));
-
-    fprintf('Topography subject %d/%d: %s\n', ...
-        iSub, nSubjects, subjID);
-
-    for ch = 1:nChan
-
-        cfgChan = cfgTFR;
-        cfgChan.roi_labels = allChanLabels(ch);
-
-        chanTFR = extract_roi_tfr_park(subj_curr, cfgChan);
-
-        if isempty(chanTFR) || ...
-                ~isfield(chanTFR, 'Consonant') || ...
-                ~isfield(chanTFR, 'Dissonant')
-
-            warning('%s | %s: no channel-level TFR.', ...
-                subjID, allChanLabels{ch});
-            continue
-        end
-
-        topoConGammaTime(iSub,ch,:) = single( ...
-            mean(chanTFR.Consonant.power(idxTopoFreq,:), ...
-            1, 'omitnan'));
-
-        topoDisGammaTime(iSub,ch,:) = single( ...
-            mean(chanTFR.Dissonant.power(idxTopoFreq,:), ...
-            1, 'omitnan'));
-    end
-end
-
 Topo_Group = struct();
 
-topoWindowNames = fieldnames(cfgTFR.topo_windows);
+topoConGammaTime = [];
+topoDisGammaTime = [];
 
-for w = 1:numel(topoWindowNames)
+allChanLocs  = [];
+allChanLabels = {};
+if cfgPlot.topoplots
+    fprintf('\n=====================================\n');
+    fprintf('CHANNEL-LEVEL TOPOPLOTS\n');
+    fprintf('Frequency range: %d-%d Hz\n', ...
+        cfgTFR.reference_freq_win(1), ...
+        cfgTFR.reference_freq_win(2));
+    fprintf('=====================================\n');
 
-    windowName = topoWindowNames{w};
-    currentWin = cfgTFR.topo_windows.(windowName);
+    allChanLocs = subj_list(1).data_trials(1).chanlocs;
+    allChanLabels = {allChanLocs.labels};
 
-    idxTopoTime = cfgTFR.time >= currentWin(1) & ...
-                  cfgTFR.time <= currentWin(2);
+    nChan = numel(allChanLabels);
+    nTime = numel(cfgTFR.time);
 
-    assert(any(idxTopoTime), ...
-        'No samples in topoplot window %s.', windowName);
+    assert(nChan > 0, ...
+        'No channel locations found.');
 
-    conSubChan = squeeze(mean( ...
-        topoConGammaTime(:,:,idxTopoTime), ...
-        3, 'omitnan'));
+    assert(isfield(allChanLocs, 'X') || isfield(allChanLocs, 'theta'), ...
+        ['Channel coordinates are missing. ' ...
+        'chanlocs must contain spatial information for topoplot.']);
 
-    disSubChan = squeeze(mean( ...
-        topoDisGammaTime(:,:,idxTopoTime), ...
-        3, 'omitnan'));
+    idxTopoFreq = cfgTFR.freqs >= cfgTFR.reference_freq_win(1) & ...
+        cfgTFR.freqs <= cfgTFR.reference_freq_win(2);
 
-    if nSubjects == 1
-        conSubChan = reshape(conSubChan, 1, nChan);
-        disSubChan = reshape(disSubChan, 1, nChan);
+    assert(any(idxTopoFreq), ...
+        'No frequency samples in requested topoplot band.');
+
+    topoConGammaTime = nan(nSubjects, nChan, nTime, 'single');
+    topoDisGammaTime = nan(nSubjects, nChan, nTime, 'single');
+
+    for iSub = 1:nSubjects
+
+        subj_curr = subj_list(iSub);
+
+        subjID = matlab.lang.makeValidName(char(subj_curr.subj_id));
+
+        fprintf('Topography subject %d/%d: %s\n', ...
+            iSub, nSubjects, subjID);
+
+        for ch = 1:nChan
+
+            cfgChan = cfgTFR;
+            cfgChan.roi_labels = allChanLabels(ch);
+
+            chanTFR = extract_roi_tfr_park(subj_curr, cfgChan);
+
+            if isempty(chanTFR) || ...
+                    ~isfield(chanTFR, 'Consonant') || ...
+                    ~isfield(chanTFR, 'Dissonant')
+
+                warning('%s | %s: no channel-level TFR.', ...
+                    subjID, allChanLabels{ch});
+                continue
+            end
+
+            topoConGammaTime(iSub,ch,:) = single( ...
+                mean(chanTFR.Consonant.power(idxTopoFreq,:), ...
+                1, 'omitnan'));
+
+            topoDisGammaTime(iSub,ch,:) = single( ...
+                mean(chanTFR.Dissonant.power(idxTopoFreq,:), ...
+                1, 'omitnan'));
+        end
     end
 
-    assert(isequal(size(conSubChan), [nSubjects nChan]), ...
-        '%s: unexpected Consonant dimensions.', windowName);
+    Topo_Group = struct();
 
-    assert(isequal(size(disSubChan), [nSubjects nChan]), ...
-        '%s: unexpected Dissonant dimensions.', windowName);
+    PlotWindows = cfgPlot.windows;
 
-    difSubChan = conSubChan - disSubChan;
+    topoWindowNames = fieldnames(PlotWindows);
 
-    Topo_Group.(windowName).labels = allChanLabels;
-    Topo_Group.(windowName).chanlocs = allChanLocs;
-    Topo_Group.(windowName).freq_win = cfgTFR.gamma_freq_win;
-    Topo_Group.(windowName).time_win = currentWin;
+    for w = 1:numel(topoWindowNames)
 
-    Topo_Group.(windowName).Consonant_Subject = conSubChan;
-    Topo_Group.(windowName).Dissonant_Subject = disSubChan;
-    Topo_Group.(windowName).Difference_Subject = difSubChan;
+        windowName = topoWindowNames{w};
+        currentWin = PlotWindows.(windowName);
 
-    Topo_Group.(windowName).Consonant = ...
-        mean(conSubChan, 1, 'omitnan');
+        idxTopoTime = cfgTFR.time >= currentWin(1) & ...
+            cfgTFR.time <= currentWin(2);
 
-    Topo_Group.(windowName).Dissonant = ...
-        mean(disSubChan, 1, 'omitnan');
+        assert(any(idxTopoTime), ...
+            'No samples in topoplot window %s.', windowName);
 
-    Topo_Group.(windowName).Difference = ...
-        mean(difSubChan, 1, 'omitnan');
+        conSubChan = squeeze(mean( ...
+            topoConGammaTime(:,:,idxTopoTime), ...
+            3, 'omitnan'));
 
-    condTopoLimit = max(abs([ ...
-        Topo_Group.(windowName).Consonant, ...
-        Topo_Group.(windowName).Dissonant]), ...
-        [], 'omitnan');
+        disSubChan = squeeze(mean( ...
+            topoDisGammaTime(:,:,idxTopoTime), ...
+            3, 'omitnan'));
 
-    diffTopoLimit = max(abs( ...
-        Topo_Group.(windowName).Difference), ...
-        [], 'omitnan');
+        if nSubjects == 1
+            conSubChan = reshape(conSubChan, 1, nChan);
+            disSubChan = reshape(disSubChan, 1, nChan);
+        end
 
-    if isempty(condTopoLimit) || isnan(condTopoLimit) || ...
-            condTopoLimit == 0
-        condTopoLimit = 1;
+        assert(isequal(size(conSubChan), [nSubjects nChan]), ...
+            '%s: unexpected Consonant dimensions.', windowName);
+
+        assert(isequal(size(disSubChan), [nSubjects nChan]), ...
+            '%s: unexpected Dissonant dimensions.', windowName);
+
+        difSubChan = conSubChan - disSubChan;
+
+        Topo_Group.(windowName).labels = allChanLabels;
+        Topo_Group.(windowName).chanlocs = allChanLocs;
+        Topo_Group.(windowName).freq_win = cfgTFR.reference_freq_win;
+        Topo_Group.(windowName).time_win = currentWin;
+
+        Topo_Group.(windowName).Consonant_Subject = conSubChan;
+        Topo_Group.(windowName).Dissonant_Subject = disSubChan;
+        Topo_Group.(windowName).Difference_Subject = difSubChan;
+
+        Topo_Group.(windowName).Consonant = ...
+            mean(conSubChan, 1, 'omitnan');
+
+        Topo_Group.(windowName).Dissonant = ...
+            mean(disSubChan, 1, 'omitnan');
+
+        Topo_Group.(windowName).Difference = ...
+            mean(difSubChan, 1, 'omitnan');
+
+        condTopoLimit = max(abs([ ...
+            Topo_Group.(windowName).Consonant, ...
+            Topo_Group.(windowName).Dissonant]), ...
+            [], 'omitnan');
+
+        diffTopoLimit = max(abs( ...
+            Topo_Group.(windowName).Difference), ...
+            [], 'omitnan');
+
+        if isempty(condTopoLimit) || isnan(condTopoLimit) || ...
+                condTopoLimit == 0
+            condTopoLimit = 1;
+        end
+
+        if isempty(diffTopoLimit) || isnan(diffTopoLimit) || ...
+                diffTopoLimit == 0
+            diffTopoLimit = 1;
+        end
+
+        fig = figure('Color', 'w', ...
+            'Position', [100 100 1450 500]);
+
+        subplot(1,3,1)
+        topoplot(Topo_Group.(windowName).Consonant, ...
+            allChanLocs, ...
+            'maplimits', [-condTopoLimit condTopoLimit], ...
+            'electrodes', 'on', ...
+            'style', 'map', ...
+            'numcontour', 6);
+        colorbar
+        title('Consonant')
+
+        subplot(1,3,2)
+        topoplot(Topo_Group.(windowName).Dissonant, ...
+            allChanLocs, ...
+            'maplimits', [-condTopoLimit condTopoLimit], ...
+            'electrodes', 'on', ...
+            'style', 'map', ...
+            'numcontour', 6);
+        colorbar
+        title('Dissonant')
+
+        subplot(1,3,3)
+        topoplot(Topo_Group.(windowName).Difference, ...
+            allChanLocs, ...
+            'maplimits', [-diffTopoLimit diffTopoLimit], ...
+            'electrodes', 'on', ...
+            'style', 'map', ...
+            'numcontour', 6);
+        colorbar
+        title('Consonant - Dissonant')
+
+        sgtitle(sprintf(...
+            'Channel-first induced gamma: %d-%d Hz, %d-%d ms (\\muV^2)', ...
+            cfgTFR.reference_freq_win(1), ...
+            cfgTFR.reference_freq_win(2), ...
+            round(currentWin(1) * 1000), ...
+            round(currentWin(2) * 1000)));
+
+        saveas(fig, fullfile(topoDir, ...
+            sprintf('Topoplot_ChannelFirst_%s_%d_%dms.png', ...
+            windowName, ...
+            round(currentWin(1) * 1000), ...
+            round(currentWin(2) * 1000))));
+
+        close(fig)
+
+        fprintf('Saved channel-first topoplot: %s [%d, %d] ms\n', ...
+            windowName, ...
+            round(currentWin(1) * 1000), ...
+            round(currentWin(2) * 1000));
     end
-
-    if isempty(diffTopoLimit) || isnan(diffTopoLimit) || ...
-            diffTopoLimit == 0
-        diffTopoLimit = 1;
-    end
-
-    fig = figure('Color', 'w', ...
-        'Position', [100 100 1450 500]);
-
-    subplot(1,3,1)
-    topoplot(Topo_Group.(windowName).Consonant, ...
-        allChanLocs, ...
-        'maplimits', [-condTopoLimit condTopoLimit], ...
-        'electrodes', 'on', ...
-        'style', 'map', ...
-        'numcontour', 6);
-    colorbar
-    title('Consonant')
-
-    subplot(1,3,2)
-    topoplot(Topo_Group.(windowName).Dissonant, ...
-        allChanLocs, ...
-        'maplimits', [-condTopoLimit condTopoLimit], ...
-        'electrodes', 'on', ...
-        'style', 'map', ...
-        'numcontour', 6);
-    colorbar
-    title('Dissonant')
-
-    subplot(1,3,3)
-    topoplot(Topo_Group.(windowName).Difference, ...
-        allChanLocs, ...
-        'maplimits', [-diffTopoLimit diffTopoLimit], ...
-        'electrodes', 'on', ...
-        'style', 'map', ...
-        'numcontour', 6);
-    colorbar
-    title('Consonant - Dissonant')
-
-    sgtitle(sprintf(...
-        'Channel-first induced gamma: %d-%d Hz, %d-%d ms (\\muV^2)', ...
-        cfgTFR.gamma_freq_win(1), ...
-        cfgTFR.gamma_freq_win(2), ...
-        round(currentWin(1) * 1000), ...
-        round(currentWin(2) * 1000)));
-
-    saveas(fig, fullfile(topoDir, ...
-        sprintf('Topoplot_ChannelFirst_%s_%d_%dms.png', ...
-        windowName, ...
-        round(currentWin(1) * 1000), ...
-        round(currentWin(2) * 1000))));
-
-    close(fig)
-
-    fprintf('Saved channel-first topoplot: %s [%d, %d] ms\n', ...
-        windowName, ...
-        round(currentWin(1) * 1000), ...
-        round(currentWin(2) * 1000));
 end
-
 %% =========================================================================
 % Save results
 %% =========================================================================
 
 save( ...
     fullfile(outputRoot, ...
-    'STEP4B_TFR_MORLET_REPLICA_PARK_CHANNELFIRST_LINEAR_RESULTS.mat'), ...
+    'STEP4B_TFR_MORLET_CHANNELFIRST_LINEAR_RESULTS.mat'), ...
     'TFR_Subj', ...
     'TFR_Group', ...
-    'gammaStats', ...
+    'BandStats', ...
     'Topo_Group', ...
     'topoConGammaTime', ...
     'topoDisGammaTime', ...

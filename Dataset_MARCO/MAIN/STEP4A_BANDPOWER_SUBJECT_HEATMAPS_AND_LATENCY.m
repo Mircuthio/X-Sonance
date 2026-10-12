@@ -1,5 +1,5 @@
 %% ============================================================
-% STEP4A_SUBJECT_HEATMAPS_AND_LATENCY
+% STEP4A_BANDPOWER_SUBJECT_HEATMAPS_AND_LATENCY
 %% ============================================================
 
 clear
@@ -36,7 +36,7 @@ bandNames = { ...
     'GammaHigh'};
 
 outdir = ...
-    'STEP4A_SUBJECT_HEATMAPS';
+    'STEP4A_BANDPOWER_SUBJECT_HEATMAPS';
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
