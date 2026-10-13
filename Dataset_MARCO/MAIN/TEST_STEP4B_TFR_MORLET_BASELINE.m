@@ -1,12 +1,13 @@
 %% =========================================================================
-% STEP4B_TFR_MORLET
+% TEST_STEP4B_TFR_MORLET_BASELINE
+% OLD file: STEP4B_TFR_MORLET_BASELINE
 %% =========================================================================
 %
 % Full-spectrum Morlet Time-Frequency analysis
 %
 % Frequency range: 2-90 Hz
 % Baseline:        -200 ms to 0 ms
-% Baseline order:  BEFORE averaging across trials
+% Baseline order:  AFTER averaging across ROI channels and trials
 %
 % Outputs:
 %   TFR_Subj
@@ -37,7 +38,7 @@ set(groot, ...
 %% ============================================================
 step4_outroot = fullfile( ...
     'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO', ...
-    'STEP4B_TFR_MORLET');
+    'STEP4B_TFR_MORLET_BASELINE');
 
 if ~exist(step4_outroot,'dir')
     mkdir(step4_outroot);
@@ -290,7 +291,7 @@ for iSub = 1:numel(subj_list)
         cfgROI = cfgTFR;
         cfgROI.roi_labels = cfgTFR.rois.(roiName);
 
-        roi_tfr = extract_roi_tfr( ...
+        roi_tfr = extract_roi_tfrBASELINE( ...
             subj_curr, ...
             cfgROI);
 
@@ -847,7 +848,7 @@ end
 assert(~isempty(fieldnames(TFR_Subj)), ...
     'No subject results generated');
 
-save(fullfile(tfrdir,'STEP4B_TFR_MORLET_RESULTS.mat'), ...
+save(fullfile(tfrdir,'STEP4B_TFR_MORLET_BASELINE_RESULTS.mat'), ...
     'TFR_Subj', ...
     'TFR_Group', ...
     'TFRBandResults', ...
@@ -859,7 +860,7 @@ save(fullfile(tfrdir,'STEP4B_TFR_MORLET_RESULTS.mat'), ...
 
 fprintf('\n');
 fprintf('=====================================\n');
-fprintf('STEP4 TFR MORLET COMPLETED\n');
+fprintf('STEP4 TFR MORLET BASELINE COMPLETED\n');
 fprintf('=====================================\n');
 
 set(0,'DefaultFigureVisible',origState);

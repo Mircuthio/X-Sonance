@@ -1,0 +1,991 @@
+%% =========================================================================
+% STEP4B_TFR_MORLET_PARKSTYLE_DB
+% STEP4B_TFR_MORLET_REPLICA_PARK
+%% =========================================================================
+%
+% PROJECT
+% -------
+% X-SONANCE EEG
+%
+%
+% PURPOSE
+% -------
+% Targeted Time-Frequency replication of:
+%
+% Park et al. (2011)
+%
+% "Consonant chords stimulate higher EEG gamma activity
+% than dissonant chords"
+%
+% The analysis focuses on induced gamma-band activity
+% and reproduces the main methodological choices used
+% to investigate consonance-related oscillatory effects.
+%
+%
+% =========================================================================
+% ANALYSIS GOAL
+% =========================================================================
+%
+% Evaluate whether consonant musical chords elicit
+% stronger gamma-band activity than dissonant chords.
+%
+%
+% Experimental Conditions
+%
+%     Consonant
+%     Dissonant
+%
+%
+% =========================================================================
+% PROCESSING PIPELINE
+% =========================================================================
+%
+% Trial
+%   ↓
+% ROI channels
+%   ↓
+% Morlet Wavelet Transform
+%   ↓
+% Power = |Z|²
+%   ↓
+% Baseline correction
+%   ↓
+% Trial averaging
+%   ↓
+% Subject TFR
+%   ↓
+% Group TFR
+%
+%
+% =========================================================================
+% ROI STRATEGIES
+% =========================================================================
+%
+% CHANNEL-FIRST
+%
+%     Wavelet decomposition is performed separately
+%     for each channel and power is averaged within ROI.
+%
+%     Advantages:
+%         - preserves channel-specific oscillatory activity
+%         - minimizes phase-cancellation effects
+%         - recommended approach
+%
+%
+% ROI-FIRST
+%
+%     EEG channels are averaged before wavelet analysis.
+%
+%     Advantages:
+%         - simpler implementation
+%         - useful for methodological comparison
+%         - potentially closer to historical approaches
+%
+%
+% =========================================================================
+% CURRENT IMPLEMENTATION
+% =========================================================================
+%
+% Method:
+%
+%     channel_first
+%
+%
+% =========================================================================
+% PARK REPLICATION PARAMETERS
+% =========================================================================
+%
+% Frequency Range:
+%
+%     30-60 Hz
+%
+%
+% Statistical Window:
+%
+%     100-250 ms
+%
+%
+% Baseline:
+%
+%     -200 ms to -50 ms
+%
+%
+% =========================================================================
+% OUTPUTS
+% =========================================================================
+%
+% Subject-Level
+%
+%     TFR_Subj
+%
+%
+% Group-Level
+%
+%     TFR_Group
+%
+%
+% Replication Metrics
+%
+%     Consonant Gamma Power
+%     Dissonant Gamma Power
+%     Difference Gamma Power
+%
+%
+% Figures
+%
+%     Consonant TFR
+%     Dissonant TFR
+%     Difference TFR
+%
+%     Gamma Time Courses
+%
+%
+% =========================================================================
+% RELATION TO OTHER STEPS
+% =========================================================================
+%
+% STEP3_ERP
+%
+%     Event-related potentials
+%
+%
+% STEP4_BANDPOWER
+%
+%     Band-limited power envelopes
+%
+%
+% STEP4_TFR_MORLET
+%
+%     Full-spectrum TFR analysis (1-90 Hz)
+%
+%
+% STEP4_TFR_MORLET_REPLICA_PARK
+%
+%     Targeted Park et al. replication
+%
+% =========================================================================
+% =========================================================================
+% ANALYSIS STRATEGIES
+% =========================================================================
+%
+% Two alternative ROI implementations are supported.
+%
+% -------------------------------------------------------------------------
+% METHOD 1 : CHANNEL-FIRST (OFFICIAL ANALYSIS)
+% -------------------------------------------------------------------------
+%
+% This is the primary pipeline used for all scientific analyses.
+%
+% Processing:
+%
+% Trial
+%   ↓
+% Each ROI channel separately
+%   ↓
+% Morlet Wavelet Transform
+%   ↓
+% Power = |Z|²
+%   ↓
+% Baseline correction
+%   ↓
+% Average power across ROI channels
+%   ↓
+% Average power across trials
+%   ↓
+% Subject TFR
+%   ↓
+% Group TFR
+%
+% Advantages:
+%
+% - Preserves channel-specific oscillatory activity
+% - Avoids signal cancellation before TFR estimation
+% - Standard approach in modern EEG TFR analyses
+% - Recommended for publication-quality analyses
+%
+%
+% -------------------------------------------------------------------------
+% METHOD 2 : ROI-FIRST (PARK-STYLE REPLICA)
+% -------------------------------------------------------------------------
+%
+% Implemented separately for methodological comparison.
+%
+% Processing:
+%
+% Trial
+%   ↓
+% Average EEG channels within ROI
+%   ↓
+% Single ROI signal
+%   ↓
+% Morlet Wavelet Transform
+%   ↓
+% Power = |Z|²
+%   ↓
+% Baseline correction
+%   ↓
+% Average power across trials
+%
+% Notes:
+%
+% - Computationally simpler
+% - May reduce oscillatory activity if channels are
+%   not perfectly phase aligned
+% - Potentially closer to the original Park et al.
+%   implementation, although the paper does not
+%   explicitly report the exact ROI processing order.
+%
+%
+% =========================================================================
+% CURRENT IMPLEMENTATION
+% =========================================================================
+%
+% cfgTFR.method = 'channel_first'
+%
+% The project currently uses METHOD 1.
+%
+%
+% =========================================================================
+% STEP4 OBJECTIVES
+% =========================================================================
+%
+% Generate:
+%
+% 1) Subject-level induced gamma TFR
+% 2) Group-level induced gamma TFR
+% 3) Consonant Time-Frequency Maps
+% 4) Dissonant Time-Frequency Maps
+% 5) Mean Gamma Time Courses
+%
+%
+% =========================================================================
+% STEP5 CONNECTION
+% =========================================================================
+%
+% Outputs generated here will be used by STEP5
+% for replication of Figure 3.
+%
+% Planned statistical window:
+%
+% Frequency:
+%   30-60 Hz
+%
+% Time:
+%   100-250 ms
+%
+%
+% =========================================================================
+
+clear
+close all
+clc
+
+origState = get(0,'DefaultFigureVisible');
+set(0,'DefaultFigureVisible','off');
+
+addpath(genpath('C:\Users\mirco\Desktop\eeglab2026.1.0\'))
+eeglab nogui
+
+set(groot,...
+    'defaultTextInterpreter','tex');
+set(groot,...
+    'defaultAxesTickLabelInterpreter','tex');
+set(groot,...
+    'defaultLegendInterpreter','tex');
+
+%% ============================================================
+% OUTPUT DIRECTORY
+%% ============================================================
+step4_outroot = ...
+    fullfile( ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO',...
+    'STEP4B_TFR_MORLET');
+
+if ~exist(step4_outroot,'dir')
+    mkdir(step4_outroot);
+end
+%% ============================================================
+% LOAD DATA
+%% ============================================================
+step2_indir = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO\';
+
+load(fullfile(step2_indir,'subj_list.mat'));
+
+% Time check
+time0 = subj_list(1).data_trials(1).time;
+
+for i = 1:numel(subj_list)
+    t = subj_list(i).data_trials(1).time;
+    assert(isequal(size(t),size(time0)), ...
+        'Time vector size mismatch');
+end
+% Frequency check
+Fs_all = zeros(numel(subj_list),1);
+for i = 1:numel(subj_list)
+    Fs_all(i) = ...
+        subj_list(i).data_trials(1).srate;
+end
+assert(numel(unique(Fs_all))==1,...
+    'Sampling rates differ across subjects');
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('LOAD COMPLETED\n');
+fprintf('Subjects : %d\n',numel(subj_list));
+fprintf('Fs       : %.1f Hz\n',Fs_all(1));
+fprintf('=====================================\n');
+
+
+%% ============================================================
+% REPLICA PARK
+%% ============================================================
+
+%% ============================================================
+% CONFIGURATION
+%% ============================================================
+
+cfgTFR = struct();
+
+cfgTFR.method = 'roi_first';
+
+% available:
+% 'channel_first' - channels time-frequency and mean
+% 'roi_first' - mean on channels before
+
+cfgTFR.conditions = { ...
+    'Consonant',...
+    'Dissonant'};
+
+cfgTFR.cond_field = 'eventLabel';
+
+cfgTFR.freqs = 30:1:60;
+
+cfgTFR.nCycles = 7;
+
+cfgTFR.baseline_win = [-0.2 -0.05];
+
+plotWin = [-0.200 1.000];
+
+cfgTFR.save_trial_level = false;
+
+cfgTFR.srate = Fs_all(1);
+
+cfgTFR.time = time0;
+%% ============================================================
+% ROI DEFINITIONS
+%% ============================================================
+
+MAIN_ROI_TFR
+
+cfgTFR.rois = ParkROI;
+
+roiNames = fieldnames(cfgTFR.rois);
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('ROI CONFIGURATION\n');
+fprintf('=====================================\n');
+
+for r = 1:numel(roiNames)
+
+    fprintf('%02d) %s\n', ...
+        r,...
+        roiNames{r});
+
+    disp(cfgTFR.rois.(roiNames{r})')
+
+end
+%% ============================================================
+% OUTPUT FOLDER
+%% ============================================================
+
+parkdir = fullfile( ...
+    step4_outroot,...
+    'STEP4B_TFR_MORLET_PARKSTYLE_DB',...
+    cfgTFR.method);
+
+if ~exist(parkdir,'dir')
+    mkdir(parkdir);
+end
+
+fprintf('\n');
+fprintf('Output folder:\n');
+fprintf('%s\n',parkdir);
+
+%% ============================================================
+% INITIALIZE OUTPUT
+%% ============================================================
+
+TFR_Subj = struct();
+%% ============================================================
+% SUBJECT LEVEL TFR
+%% ============================================================
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('SUBJECT LEVEL TFR\n');
+fprintf('=====================================\n');
+
+for iSub = 1:numel(subj_list)
+
+    subj_curr = subj_list(iSub);
+
+    subjID = matlab.lang.makeValidName( ...
+    char(subj_curr.subj_id));
+
+    fprintf('\n');
+    fprintf('-------------------------------------\n');
+    fprintf('SUBJECT: %s\n',subjID);
+    fprintf('-------------------------------------\n');
+    for r = 1:numel(roiNames)
+
+        roiName = roiNames{r};
+
+        fprintf('\n');
+        fprintf('ROI : %s\n',roiName);
+
+        cfgROI = cfgTFR;
+
+        cfgROI.roi_labels = ...
+            cfgTFR.rois.(roiName);
+        roi_tfr = extract_roi_tfr( ...
+            subj_curr,...
+            cfgROI);
+        if isempty(roi_tfr)
+
+            warning('%s | %s empty result',...
+                subjID,...
+                roiName);
+
+            continue
+
+        end
+        TFR_Subj.(subjID).(roiName) = ...
+            roi_tfr;
+        if isfield(roi_tfr,'Consonant')
+
+            sz = size( ...
+                roi_tfr.Consonant.power);
+
+            fprintf( ...
+                'Consonant TFR: [%d x %d]\n',...
+                sz(1),...
+                sz(2));
+
+        end
+
+        if isfield(roi_tfr,'Dissonant')
+
+            sz = size( ...
+                roi_tfr.Dissonant.power);
+
+            fprintf( ...
+                'Dissonant TFR: [%d x %d]\n',...
+                sz(1),...
+                sz(2));
+
+        end
+    end
+
+end
+%% ============================================================
+% SANITY CHECK
+%% ============================================================
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('SANITY CHECK\n');
+fprintf('=====================================\n');
+
+subjectNames = fieldnames(TFR_Subj);
+
+fprintf('Subjects processed: %d\n', ...
+    numel(subjectNames));
+%% ============================================================
+% GROUP LEVEL TFR
+%% ============================================================
+
+TFR_Group = struct();
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('GROUP LEVEL TFR\n');
+fprintf('=====================================\n');
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    fprintf('Building ROI: %s\n',roiName);
+
+    TFR_Group.(roiName) = ...
+        average_group_tfr( ...
+        TFR_Subj,...
+        roiName);
+
+end
+%% ============================================================
+% GLOBAL COLOR LIMITS
+%% ============================================================
+
+allPower = [];
+allDiff  = [];
+
+for r = 1:numel(roiNames)
+
+    roiName = roiNames{r};
+
+    allPower = [ ...
+        allPower ;
+        TFR_Group.(roiName).Consonant.power(:) ;
+        TFR_Group.(roiName).Dissonant.power(:)];
+
+    allDiff = [ ...
+        allDiff ;
+        TFR_Group.(roiName).Difference.power(:)];
+
+end
+
+GLOBAL_TFR_MIN = prctile(allPower,2);
+GLOBAL_TFR_MAX = prctile(allPower,98);
+
+GLOBAL_DIFF_MAX = ...
+    prctile(abs(allDiff),98);
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('GLOBAL COLOR LIMITS\n');
+fprintf('=====================================\n');
+fprintf('TFR  : [%.3f %.3f]\n', ...
+    GLOBAL_TFR_MIN,...
+    GLOBAL_TFR_MAX);
+
+fprintf('DIFF : +/- %.3f\n', ...
+    GLOBAL_DIFF_MAX);
+fprintf('=====================================\n');
+%% ============================================================
+% PLOTS
+%% ============================================================
+for r=1:numel(roiNames)
+    roiName = roiNames{r};
+    groupData = ...
+        TFR_Group.(roiName);
+
+    idxTime = groupData.time >= plotWin(1) & ...
+        groupData.time <= plotWin(2);
+    assert(any(idxTime), ...
+        'No time points found in selected plot window');
+    timePlot = groupData.time(idxTime);
+
+    gammaStats.(roiName) = ...
+        extract_gamma_window( ...
+        TFR_Group.(roiName),...
+        [30 60],...
+        [0.10 0.25]);
+    stats = gammaStats.(roiName);
+
+    fprintf('\n');
+    fprintf('=====================================\n');
+    fprintf('PARK WINDOW RESULTS\n');
+    fprintf('ROI : %s\n',roiName);
+    fprintf('Consonant : %.4f dB\n',stats.Consonant);
+    fprintf('Dissonant : %.4f dB\n',stats.Dissonant);
+    fprintf('Difference: %.4f dB\n',stats.Difference);
+    fprintf('=====================================\n');
+
+    diffMap = groupData.Difference.power;
+
+    fprintf('\n');
+    fprintf('ROI: %s\n',roiName);
+    fprintf('Mean Difference: %.4f dB\n', ...
+        mean(diffMap(:)));
+    figure
+
+    subplot(3,1,1)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        groupData.Consonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+    colorbar
+        clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+
+    title(sprintf('%s - Consonant',format_tex_name(roiName)))
+
+    subplot(3,1,2)
+
+    imagesc( ...
+    timePlot,...
+    groupData.freq,...
+    groupData.Dissonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+    colorbar
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+
+    title(sprintf('%s - Dissonant',format_tex_name(roiName)))
+
+    subplot(3,1,3)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        diffMap(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+    colorbar
+        clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    title(sprintf('%s - Difference',format_tex_name(roiName)))
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_Group_%s.png',roiName)));
+    close
+
+    %% ============================================================
+    % EXTRA FIGURE: CONSONANT vs DISSONANT
+    %% ============================================================
+
+    figure
+
+    subplot(2,1,1)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        groupData.Consonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+    colorbar
+
+    title(sprintf('%s - Consonant', ...
+        format_tex_name(roiName)))
+
+    subplot(2,1,2)
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        groupData.Dissonant.power(:,idxTime))
+
+    axis xy
+    hold on
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+
+    clim([GLOBAL_TFR_MIN GLOBAL_TFR_MAX])
+    colorbar
+
+    title(sprintf('%s - Dissonant', ...
+        format_tex_name(roiName)))
+
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_CD_%s.png',roiName)));
+
+    close
+    %% ============================================================
+    % EXTRA FIGURE: DIFFERENCE ONLY
+    %% ============================================================
+
+    figure
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        diffMap(:,idxTime))
+
+    axis xy
+    hold on
+
+    xline(0,'k--','LineWidth',1.5)
+    xline(0.10,'r--','LineWidth',1.5)
+    xline(0.25,'r--','LineWidth',1.5)
+
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    colorbar
+
+    xlabel('Time (s)')
+    ylabel('Frequency (Hz)')
+
+    title(sprintf('%s - Difference', ...
+        format_tex_name(roiName)))
+
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_DIFF_%s.png',roiName)));
+
+    close
+    %% ============================================================
+    % EXTRA FIGURE: DIFFERENCE ZOOM PARK
+    %% ============================================================
+
+    figure
+
+    imagesc( ...
+        timePlot,...
+        groupData.freq,...
+        diffMap(:,idxTime))
+
+    axis xy
+    hold on
+
+    xline(0,'k--','LineWidth',1.5)
+    xline(0.10,'r--','LineWidth',1.5)
+    xline(0.25,'r--','LineWidth',1.5)
+
+    xlim([0 0.4])
+    ylim([30 60])
+
+    clim([-GLOBAL_DIFF_MAX GLOBAL_DIFF_MAX])
+
+    colorbar
+
+    xlabel('Time (s)')
+    ylabel('Frequency (Hz)')
+
+    title(sprintf('%s - Difference Zoom Park', ...
+        format_tex_name(roiName)))
+    set(gca,'FontSize',12)
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('TFR_DIFF_ZOOM_%s.png',roiName)));
+
+    close
+
+    gammaConTime = ...
+        mean(groupData.Consonant.power,1);
+    gammaDisTime = ...
+        mean(groupData.Dissonant.power,1);
+    gammaDiffTime = ...
+        mean(groupData.Difference.power,1);
+    % --------------------------------------------------------
+    % GROUP-AVERAGE PEAKS IN PARK WINDOW
+    %
+    % Curves are gamma mean (30-60 Hz) in dB.
+    % Peaks are descriptive maxima within 100-250 ms.
+    % --------------------------------------------------------
+    idxParkTime = ...
+        groupData.time >= 0.100 & ...
+        groupData.time <= 0.250;
+
+    assert(any(idxParkTime), ...
+        '%s: no samples in Park peak window.',roiName);
+
+    parkTime = groupData.time(idxParkTime);
+
+    [conPeak,conPeakIdx] = max( ...
+        gammaConTime(idxParkTime), ...
+        [], ...
+        'omitnan');
+
+    [disPeak,disPeakIdx] = max( ...
+        gammaDisTime(idxParkTime), ...
+        [], ...
+        'omitnan');
+
+    [diffPeak,diffPeakIdx] = max( ...
+        gammaDiffTime(idxParkTime), ...
+        [], ...
+        'omitnan');
+
+    conPeakTime = parkTime(conPeakIdx);
+    disPeakTime = parkTime(disPeakIdx);
+    diffPeakTime = parkTime(diffPeakIdx);
+    gammaStats.(roiName).TimeCourse.time = ...
+    groupData.time;
+    gammaStats.(roiName).TimeCourse.Consonant = ...
+        gammaConTime;
+    gammaStats.(roiName).TimeCourse.Dissonant = ...
+        gammaDisTime;
+    gammaStats.(roiName).TimeCourse.Difference = ...
+        gammaDiffTime;
+    % --------------------------------------------------------
+    % Descriptive group-average peaks, in dB
+    % --------------------------------------------------------
+    gammaStats.(roiName).PeakWindow = [0.100 0.250];
+
+    gammaStats.(roiName).ConsonantPeak_dB = conPeak;
+    gammaStats.(roiName).DissonantPeak_dB = disPeak;
+    gammaStats.(roiName).DifferencePeak_dB = diffPeak;
+
+    gammaStats.(roiName).ConsonantPeakTime_s = conPeakTime;
+    gammaStats.(roiName).DissonantPeakTime_s = disPeakTime;
+    gammaStats.(roiName).DifferencePeakTime_s = diffPeakTime;
+    fprintf('\n');
+    fprintf('PARK PEAKS IN dB | ROI: %s\n',roiName);
+    fprintf('Consonant peak : %.4f dB at %.1f ms\n', ...
+        conPeak,conPeakTime * 1000);
+    fprintf('Dissonant peak : %.4f dB at %.1f ms\n', ...
+        disPeak,disPeakTime * 1000);
+    fprintf('Difference peak: %.4f dB at %.1f ms\n', ...
+        diffPeak,diffPeakTime * 1000);
+    figure
+    plot(timePlot,...
+        gammaConTime(idxTime),...
+        'r','LineWidth',2)
+    hold on
+    plot(timePlot,...
+        gammaDisTime(idxTime),...
+        'b','LineWidth',2)
+
+    plot(timePlot,...
+        gammaDiffTime(idxTime),...
+        'k--',...
+        'LineWidth',2)
+    xline(0,'k--','LineWidth',1)
+    xline(0.10,'r--','LineWidth',1)
+    xline(0.25,'r--','LineWidth',1)
+    legend( ...
+        'Consonant',...
+        'Dissonant',...
+        'Difference');
+    xlabel('Time (s)')
+    ylabel('Power (dB)')
+    title(sprintf('Gamma Time Course - %s',format_tex_name(roiName)))
+    saveas( ...
+        gcf,...
+        fullfile( ...
+        parkdir,...
+        sprintf('GammaTimeCourse_%s.png',roiName)));
+    close
+    %% ============================================================
+    % EXTRA FIGURE: GAMMA TIME COURSE WITH PARK PEAKS
+    %% ============================================================
+    figure('Color','w', ...
+        'Position',[100 100 1100 550])
+
+    plot( ...
+        timePlot, ...
+        gammaConTime(idxTime), ...
+        'LineWidth',2, ...
+        'Color',[0.75 0.20 0.20])
+    hold on
+
+    plot( ...
+        timePlot, ...
+        gammaDisTime(idxTime), ...
+        'LineWidth',2, ...
+        'Color',[0.20 0.25 0.70])
+
+    plot( ...
+        timePlot, ...
+        gammaDiffTime(idxTime), ...
+        'k--', ...
+        'LineWidth',1.8)
+
+    xline(0,'k--','LineWidth',1)
+    yline(0,'k:','LineWidth',1)
+
+    xline(0.100,'k:','LineWidth',1)
+    xline(0.250,'k:','LineWidth',1)
+
+    plot( ...
+        conPeakTime, ...
+        conPeak, ...
+        'o', ...
+        'MarkerSize',8, ...
+        'MarkerFaceColor',[0.75 0.20 0.20], ...
+        'MarkerEdgeColor','k')
+
+    plot( ...
+        disPeakTime, ...
+        disPeak, ...
+        'o', ...
+        'MarkerSize',8, ...
+        'MarkerFaceColor',[0.20 0.25 0.70], ...
+        'MarkerEdgeColor','k')
+
+    plot( ...
+        diffPeakTime, ...
+        diffPeak, ...
+        'o', ...
+        'MarkerSize',8, ...
+        'MarkerFaceColor','k', ...
+        'MarkerEdgeColor','k')
+
+    xlim(plotWin)
+
+    xlabel('Time (s)')
+    ylabel('Gamma power change (dB)')
+
+    legend( ...
+        'Consonant', ...
+        'Dissonant', ...
+        'Consonant - Dissonant', ...
+        'Stimulus onset', ...
+        'Zero baseline', ...
+        '100 ms', ...
+        '250 ms', ...
+        'Consonant peak', ...
+        'Dissonant peak', ...
+        'Difference peak', ...
+        'Location','northeastoutside')
+
+    title(sprintf( ...
+        ['Group-average gamma peaks in Park window ' ...
+        '(30-60 Hz, 100-250 ms) - %s'], ...
+        format_tex_name(roiName)))
+
+    grid on
+    box off
+
+    saveas( ...
+        gcf, ...
+        fullfile( ...
+        parkdir, ...
+        sprintf('GammaPeaks_100_250_dB_%s.png',roiName)))
+    close
+end
+%% ============================================================
+% SAVE
+%% ============================================================
+assert(~isempty(fieldnames(TFR_Subj)), ...
+    'No subject results generated');
+save( ...
+    fullfile( ...
+    parkdir,...
+    'STEP4B_TFR_MORLET_PARKSTYLE_DB_RESULTS.mat'),...
+    'TFR_Subj',...
+    'TFR_Group',...
+    'gammaStats',...
+    'cfgTFR',...
+    'ParkROI',...
+    '-v7.3');
+
+fprintf('\n');
+fprintf('=====================================\n');
+fprintf('STEP4B REPLICA PARK SUBJECT LEVEL SAVED\n');
+fprintf('=====================================\n');
+
+set(0,'DefaultFigureVisible',origState);
