@@ -226,7 +226,9 @@ MAIN_ROI
 
 cfgTFR.rois = ROI;
 
-roiNames = cfgTFR.analysis_rois;
+% roiNames = cfgTFR.analysis_rois;
+
+roiNames = fieldnames(cfgTFR.rois);
 
 assert(~isempty(roiNames), ...
     'No ROI defined in MAIN_ROI.');
@@ -592,13 +594,13 @@ for r = 1:numel(roiNames)
 
                 plot(timePlot,bandConTime(idxPlotTime), ...
                     'LineWidth',2, ...
-                    'Color',[0.75 0.20 0.20]);
+                    'Color',[0.20 0.25 0.70]);
 
                 hold on
 
                 plot(timePlot,bandDisTime(idxPlotTime), ...
                     'LineWidth',2, ...
-                    'Color',[0.20 0.25 0.70]);
+                    'Color',[0.75 0.20 0.20]);
 
                 xline(0,'k--','LineWidth',1);
                 yline(0,'k--','LineWidth',1);
@@ -606,7 +608,7 @@ for r = 1:numel(roiNames)
 
                 xlabel('Time (ms)')
                 ylabel('Induced power change (\muV^2)')
-                legend('Consonant chord','Dissonant chord', ...
+                legend('Consonant','Dissonant', ...
                     'Location','northeast')
 
                 title(sprintf( ...
@@ -634,13 +636,13 @@ for r = 1:numel(roiNames)
 
                 plot(timePlot,bandConTime(idxPlotTime), ...
                     'LineWidth',2, ...
-                    'Color',[0.75 0.20 0.20]);
+                    'Color',[0.20 0.25 0.70]);
 
                 hold on
 
                 plot(timePlot,bandDisTime(idxPlotTime), ...
                     'LineWidth',2, ...
-                    'Color',[0.20 0.25 0.70]);
+                    'Color',[0.75 0.20 0.20]);
 
                 plot(timePlot,bandDifTime(idxPlotTime), ...
                     'k--', ...
@@ -652,7 +654,7 @@ for r = 1:numel(roiNames)
 
                 xlabel('Time (ms)')
                 ylabel('Induced power change (\muV^2)')
-                legend('Consonant chord','Dissonant chord', ...
+                legend('Consonant','Dissonant', ...
                     'Consonant - Dissonant', ...
                     'Location','northeast')
 
