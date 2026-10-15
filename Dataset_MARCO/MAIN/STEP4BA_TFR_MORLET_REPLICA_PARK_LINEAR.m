@@ -44,7 +44,6 @@ eeglab nogui
 set(groot, 'defaultTextInterpreter', 'tex');
 set(groot, 'defaultAxesTickLabelInterpreter', 'tex');
 set(groot, 'defaultLegendInterpreter', 'tex');
-
 %% =========================================================================
 % Paths
 % =========================================================================
@@ -52,26 +51,6 @@ set(groot, 'defaultLegendInterpreter', 'tex');
 projectRoot = 'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
 
 inputDir = projectRoot;
-
-outputRoot = fullfile( ...
-    projectRoot, ...
-    'STEP4B_TFR_MORLET', ...
-    'STEP4BA_TFR_MORLET_REPLICA_PARK_LINEAR');
-
-if ~exist(outputRoot, 'dir')
-    mkdir(outputRoot);
-end
-
-figDir = fullfile(outputRoot, 'Figures');
-if ~exist(figDir, 'dir')
-    mkdir(figDir);
-end
-
-topoDir = fullfile(outputRoot, 'Topoplots');
-if ~exist(topoDir, 'dir')
-    mkdir(topoDir);
-end
-
 %% =========================================================================
 % Load input data
 % =========================================================================
@@ -121,7 +100,7 @@ cfgTFR = struct();
 
 % Park-style option: ROI average before TFR.
 % You can later repeat with 'channel_first' for sensitivity analysis.
-cfgTFR.method = 'roi_first';
+cfgTFR.method = 'roi_first'; %roi_first
 
 cfgTFR.conditions = {'Consonant', 'Dissonant'};
 cfgTFR.cond_field = 'eventLabel';
@@ -167,6 +146,28 @@ cfgTFR.srate = Fs;
 cfgTFR.time = time0;
 cfgTFR.save_trial_level = false;
 
+%% =========================================================================
+% OUT DIR
+% =========================================================================
+
+outputRoot = fullfile( ...
+    projectRoot, ...
+    'STEP4B_TFR_MORLET', ...
+    'STEP4BA_TFR_MORLET_REPLICA_PARK_LINEAR',cfgTFR.method);
+
+if ~exist(outputRoot, 'dir')
+    mkdir(outputRoot);
+end
+
+figDir = fullfile(outputRoot, 'Figures');
+if ~exist(figDir, 'dir')
+    mkdir(figDir);
+end
+
+topoDir = fullfile(outputRoot, 'Topoplots');
+if ~exist(topoDir, 'dir')
+    mkdir(topoDir);
+end
 %% =========================================================================
 % ROI definition
 % =========================================================================
@@ -529,7 +530,7 @@ for r = 1:numel(roiNames)
 
     xlabel('Time (ms)')
     ylabel('Induced gamma power change (\muV^2)')
-    legend('Consonant chord', 'Dissonant chord', ...
+    legend('Consonant', 'Dissonant', ...
         'Location', 'northeast')
     title(sprintf('Gamma time course (30-60 Hz) — %s', ...
         format_tex_name(roiName)))
@@ -567,7 +568,7 @@ for r = 1:numel(roiNames)
 
     xlabel('Time (ms)')
     ylabel('Induced gamma power change (\muV^2)')
-    legend('Consonant chord', 'Dissonant chord', ...
+    legend('Consonant', 'Dissonant', ...
         'Consonant - Dissonant', ...
         'Location', 'northeast')
     title(sprintf('Gamma time course (30-60 Hz) — %s', ...
