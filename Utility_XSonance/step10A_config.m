@@ -5,72 +5,80 @@ function cfgFD = step10A_config()
 %% ============================================================
 
 cfgFD.class_labels = { ...
-    'Consonant' ...
+    'Consonant',...
     'Dissonant'};
 
-cfgFD.class_codes = [1 2];
+cfgFD.class_codes = [7 8];
 
 %% ============================================================
-% ERP WINDOWS
+% MASTER TEMPORAL WINDOWS
 %% ============================================================
 
 cfgFD.windows = struct();
 
-cfgFD.windows.MMN      = [0.100 0.200];
-
-cfgFD.windows.ERAN_A   = [0.170 0.195];
-cfgFD.windows.ERAN_B   = [0.195 0.220];
-
-cfgFD.windows.REB_A    = [0.220 0.270];
-cfgFD.windows.REB_B    = [0.270 0.320];
-
-cfgFD.windows.N5       = [0.450 0.550];
-
+cfgFD.windows.EARLY = [0.170 0.210];
+cfgFD.windows.CORE  = [0.240 0.310];
+cfgFD.windows.LATE  = [0.470 0.530];
 
 %% ============================================================
-% ANALYSIS ROI
+% ROI FROM ERP + TFR AUDIT
 %% ============================================================
 
 cfgFD.analysis_rois = { ...
-    'MMN' ...
-    'ERAN_CORE' ...
-    'ERAN_RIGHT' ...
-    'N5_CENTRAL'};
+    'ERAN_CORE',...
+    'aMMN',...
+    'N5_FRONT',...
+    'FrontoCentral',...
+    'Occipital',...
+    'Parietal'};
 
 %% ============================================================
 % ERP FEATURES
 %% ============================================================
 
 cfgFD.erp_features = { ...
-    'Mean' ...
-    'MinPeak' ...
-    'MaxPeak' ...
+    'Mean',...
+    'MinPeak',...
+    'MaxPeak',...
     'AUC'};
 
 %% ============================================================
-% ERP COMPLEX FEATURES
+% COMPLEX ERP FEATURES
 %% ============================================================
 
 cfgFD.erp_complex_features = { ...
-    'PeakToPeak'
+    'PeakToPeak',...
     'ERPIndex'};
 
 %% ============================================================
-% BANDS
+% BAND DEFINITIONS
 %% ============================================================
 
-cfgFD.bands.Theta    = [4 8];
-cfgFD.bands.Alpha    = [8 13];
-cfgFD.bands.BetaLow  = [13 20];
-cfgFD.bands.BetaHigh = [20 30];
-cfgFD.bands.GammaLow = [30 45];
+cfgFD.bands = struct();
+
+cfgFD.bands.Theta     = [4 8];
+cfgFD.bands.Alpha     = [8 13];
+cfgFD.bands.BetaLow   = [13 20];
+
+cfgFD.bands.BetaHigh  = [20 30];
+cfgFD.bands.GammaLow  = [30 40];
+cfgFD.bands.GammaHigh = [40 90];
+
+%% ============================================================
+% PRIORITY BANDS
+%% ============================================================
 
 cfgFD.analysis_bands = { ...
-    'Theta' ...
-    'Alpha' ...
-    'BetaLow' ...
-    'BetaHigh' ...
-    'GammaLow'};
+    'Theta',...
+    'Alpha',...
+    'BetaLow'};
+
+%% ============================================================
+% FEATURE SOURCES
+%% ============================================================
+
+cfgFD.useERP = true;
+cfgFD.useBandPower = true;
 
 %% ============================================================
 % BASELINE
@@ -78,40 +86,40 @@ cfgFD.analysis_bands = { ...
 
 cfgFD.baseline_win = [-0.2 0];
 
-cfgFD.normalization = 'db';
+%% ============================================================
+% BANDPOWER NORMALIZATION
+%% ============================================================
+
+cfgFD.bandpower_normalization = 'db';
 
 %% ============================================================
-% SCREENING
+% SCREENING METRICS
 %% ============================================================
 
 cfgFD.compute_auc = true;
 cfgFD.compute_ttest = true;
 cfgFD.compute_cohensd = true;
+
+%% ============================================================
+% REDUNDANCY ANALYSIS
+%% ============================================================
+
+cfgFD.compute_correlation = true;
+
+cfgFD.high_corr_threshold = 0.85;
+
 %% ============================================================
 % DATASET FIELDS
 %% ============================================================
 
-cfgFD.eventField = ...
-    'eventLabel';
+cfgFD.eventField = 'eventLabel';
 
-cfgFD.subjectField = ...
-    'subj_id';
+cfgFD.subjectField = 'subj_id';
 
 %% ============================================================
-% CLASS CONFIG
+% ANALYSIS WINDOW
 %% ============================================================
 
-cfgFD.class_labels = { ...
-    'Consonant',...
-    'Dissonant'};
-
-cfgFD.class_codes = [7 8];
-
-%% ============================================================
-% BUILD DATASET WINDOW
-%% ============================================================
-
-cfgFD.analysis_window = ...
-    [-0.5 1.0];
+cfgFD.analysis_window = [-0.5 1.0];
 
 end

@@ -602,4 +602,15 @@ Cases(iCase).classifiers = ...
 
 Cases(iCase).notes = ...
     'ERP-guided FBCSP 150-500 ms. Consonant vs Dissonant vs ControlGOAL';
+
+
+iCase = iCase + 1;
+Cases(iCase) = base;
+Cases(iCase).case_id = 'P10_01';
+Cases(iCase).group = 'PART10';
+Cases(iCase).name = 'BEST';
+Cases(iCase).class_codes = [7 8];
+Cases(iCase).class_labels = {'Consonant','Dissonant'};
+Cases(iCase).time_window = [0.15 0.53];
+Cases(iCase).notes = 'Best epoch, Consonant vs Dissonant';
 end
