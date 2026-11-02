@@ -611,6 +611,6 @@ Cases(iCase).group = 'PART10';
 Cases(iCase).name = 'BEST';
 Cases(iCase).class_codes = [7 8];
 Cases(iCase).class_labels = {'Consonant','Dissonant'};
-Cases(iCase).time_window = [0.15 0.53];
+Cases(iCase).time_window = [0.24 0.31];
 Cases(iCase).notes = 'Best epoch, Consonant vs Dissonant';
 end
