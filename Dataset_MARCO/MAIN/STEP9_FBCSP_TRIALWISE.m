@@ -2,14 +2,57 @@
 % STEP9_FBCSP_TRIALWISE
 % MAIN_FBCSP_TRIALWISE_STEP9
 %% =========================================================================
-
+%
+% PIPELINE
+%
+% subj_list
+%     ↓
+% build_fbcsp_dataset
+%
+%     ↓
+% apply_fbcsp_filterbank
+%
+%         eeg  → eegFB
+%
+%     ↓
+% Trialwise Stratified Split
+%
+%         Train Trials = 80%
+%         Test Trials  = 20%
+%
+%     ↓
+% CSP Model (TRAIN ONLY)
+%
+%     ↓
+% CSP Encode (TRAIN / TEST)
+%
+%     ↓
+% MI Model (TRAIN ONLY)
+%
+%     ↓
+% MI Encode (TRAIN / TEST)
+%
+%     ↓
+% Classifier Model (TRAIN ONLY)
+%
+%         QDA
+%         KNN
+%         NB
+%         SVC
+%
+%     ↓
+% Prediction (TRAIN / TEST)
+%
+%     ↓
+% ACC / BA / F1 / MCC
+%
+%% =========================================================================
 clear
 close all
 clc
 
 origState = get(0,'DefaultFigureVisible');
 set(0,'DefaultFigureVisible','off');
-
 disable_eeglab();
 
 %% ============================================================
@@ -20,20 +63,28 @@ step2_indir = ...
 
 load(fullfile(step2_indir,'subj_list.mat'));
 
+MAIN_ROI
+ROI = orderfields(ROI);
+
 %% ============================================================
 % OUTPUT
 %% ============================================================
+outputdirCASE = 'STEP9_FBCSP_TRIALWISE';
+
 Cases = build_fbcsp_cases();
 
-numiCase = 18;
+% Select one or more cases
+numiCase = 1;
+
 for iCase = 1:numel(numiCase)
+
     try
 
         CaseCfg = Cases(numiCase(iCase));
 
         outdir = fullfile( ...
             step2_indir,...
-            'STEP9_FBCSP_TRIALWISE',...
+            outputdirCASE,...
             CaseCfg.group,...
             CaseCfg.name);
 
@@ -41,10 +92,115 @@ for iCase = 1:numel(numiCase)
             mkdir(outdir);
         end
 
-        %% ============================================================
+        %% ========================================================
         % CONFIGURATION
-        %% ============================================================
+        %% ========================================================
         cfgFBCSP = struct();
+
+        %% --------------------------------------------------------
+        % RANDOM SEED
+        %% --------------------------------------------------------
+        cfgFBCSP.randomSeed = 10;
+
+        rng('default')
+        rng(cfgFBCSP.randomSeed)
+
+        %% --------------------------------------------------------
+        % CLASSES
+        %% --------------------------------------------------------
+        cfgFBCSP.class_labels = ...
+            CaseCfg.class_labels;
+        cfgFBCSP.class_codes = ...
+            CaseCfg.class_codes;
+
+        %% --------------------------------------------------------
+        % TIME WINDOW
+        %% --------------------------------------------------------
+        cfgFBCSP.time_window = ...
+            CaseCfg.time_window;
+
+        %% --------------------------------------------------------
+        % SUBEPOCHS
+        %% --------------------------------------------------------
+        cfgFBCSP.useSubEpochs = ...
+            CaseCfg.useSubEpochs;
+        cfgFBCSP.subEpochLength = ...
+            CaseCfg.subEpochLength;
+        cfgFBCSP.subEpochOverlap = ...
+            CaseCfg.subEpochOverlap;
+
+        %% --------------------------------------------------------
+        % FILTER BANK
+        %% --------------------------------------------------------
+        cfgFBCSP.useFilterBank = ...
+            CaseCfg.useFilterBank;
+        cfgFBCSP.filterBankName = ...
+            CaseCfg.filterBankName;
+
+        %% --------------------------------------------------------
+        % CSP
+        %% --------------------------------------------------------
+        cfgFBCSP.csp_components = ...
+            CaseCfg.csp_components;
+
+        %% --------------------------------------------------------
+        % MUTUAL INFORMATION
+        %% --------------------------------------------------------
+        cfgFBCSP.useMI = ...
+            CaseCfg.useMI;
+        cfgFBCSP.mi_k = ...
+            CaseCfg.mi_k;
+
+        %% --------------------------------------------------------
+        % CLASSIFIERS
+        %% --------------------------------------------------------
+        cfgFBCSP.classifiers = ...
+            CaseCfg.classifiers;
+        cfgFBCSP.classifiers = {'QDA'};
+        %% --------------------------------------------------------
+        % TSNE
+        %% --------------------------------------------------------
+        if isfield(CaseCfg,'doTSNE')
+            cfgFBCSP.doTSNE = ...
+                CaseCfg.doTSNE;
+        else
+            cfgFBCSP.doTSNE = false;
+        end
+        %% ------------------------------------------------------------
+        % ROI
+        %% ------------------------------------------------------------
+        cfgFBCSP.useROI = ...
+            CaseCfg.useROI;
+
+        if isfield(CaseCfg,'analysis_rois')
+            cfgFBCSP.analysis_rois = ...
+                CaseCfg.analysis_rois;
+        end
+
+        cfgFBCSP.rois = ROI;
+        %% --------------------------------------------------------
+        % DATASET FIELDS
+        %% --------------------------------------------------------
+        cfgFBCSP.eventField = ...
+            'eventLabel';
+        cfgFBCSP.subjectField = ...
+            'subj_id';
+
+        %% --------------------------------------------------------
+        % SIGNAL FIELD
+        %% --------------------------------------------------------
+        cfgFBCSP.signalField = ...
+            'eegFB';
+
+        %% --------------------------------------------------------
+        % TRIALWISE PARAMETERS
+        %% --------------------------------------------------------
+        cfgFBCSP.trainRatio = ...
+            0.80;
+        cfgFBCSP.testRatio = ...
+            0.20;
+        cfgFBCSP.numIterations = ...
+            25;
 
         fprintf('\n');
         fprintf('================================\n');
@@ -57,119 +213,51 @@ for iCase = 1:numel(numiCase)
         fprintf('Window : %.3f %.3f\n', ...
             CaseCfg.time_window(1),...
             CaseCfg.time_window(2));
-
         fprintf('FilterBank : %s\n', ...
             CaseCfg.filterBankName);
-
         fprintf('CSP : %d\n', ...
             CaseCfg.csp_components);
-
         fprintf('MI : %d\n', ...
             CaseCfg.mi_k);
-        %% ------------------------------------------------------------
-        % RANDOM SEED
-        %% ------------------------------------------------------------
-        cfgFBCSP.randomSeed = 10;
-
-        rng('default')
-        rng(cfgFBCSP.randomSeed)
-
-        %% ------------------------------------------------------------
-        % CLASSES
-        %% ------------------------------------------------------------
-        cfgFBCSP.class_labels = CaseCfg.class_labels;
-
-        cfgFBCSP.class_codes = CaseCfg.class_codes;
-
-        %% ------------------------------------------------------------
-        % TIME WINDOW
-        %% ------------------------------------------------------------
-        cfgFBCSP.time_window = CaseCfg.time_window;
-
-        %% ------------------------------------------------------------
-        % SUBEPOCHS
-        %% ------------------------------------------------------------
-        cfgFBCSP.useSubEpochs = ...
-            CaseCfg.useSubEpochs;
-
-        cfgFBCSP.subEpochLength = ...
-            CaseCfg.subEpochLength;
-
-        cfgFBCSP.subEpochOverlap = ...
-            CaseCfg.subEpochOverlap;
-        %% ------------------------------------------------------------
-        % FILTER BANK
-        %% ------------------------------------------------------------
-        cfgFBCSP.useFilterBank = ...
-            CaseCfg.useFilterBank;
-
-        cfgFBCSP.filterBankName = ...
-            CaseCfg.filterBankName;
-
-        %% ------------------------------------------------------------
-        % CSP
-        %% ------------------------------------------------------------
-        cfgFBCSP.csp_components = ...
-            CaseCfg.csp_components;
-
-        %% ------------------------------------------------------------
-        % MUTUAL INFORMATION
-        %% ------------------------------------------------------------
-        cfgFBCSP.useMI = ...
-            CaseCfg.useMI;
-
-        cfgFBCSP.mi_k = ...
-            CaseCfg.mi_k;
-
-        %% ------------------------------------------------------------
-        % CLASSIFIERS
-        %% ------------------------------------------------------------
-        cfgFBCSP.classifiers = ...
-            CaseCfg.classifiers;
-
-        %% ------------------------------------------------------------
-        % DATASET FIELDS
-        %% ------------------------------------------------------------
-        cfgFBCSP.eventField = 'eventLabel';
-
-        cfgFBCSP.subjectField = ...
-            'subj_id';
-
-        %% ------------------------------------------------------------
-        % SIGNAL FIELD
-        %% ------------------------------------------------------------
-        cfgFBCSP.signalField = ...
-            'eegFB';
-
-        %% ------------------------------------------------------------
-        % TRIALWISE PARAMETERS
-        %% ------------------------------------------------------------
-        cfgFBCSP.trainRatio = 0.80;
-
-        cfgFBCSP.testRatio = 0.20;
-
-        cfgFBCSP.kfold = 4;
-
-        cfgFBCSP.numIterations = 25;
-
-        %% ============================================================
+        fprintf('Use ROI : %d\n', ...
+            cfgFBCSP.useROI);
+        if cfgFBCSP.useROI
+            fprintf('ROIs:\n');
+            disp(cfgFBCSP.analysis_rois);
+        end
+        fprintf('Iterations : %d\n', ...
+            cfgFBCSP.numIterations);
+        fprintf('TSNE     : %d\n', ...
+            cfgFBCSP.doTSNE);
+        %% ========================================================
         % BUILD DATASET
-        %% ============================================================
+        %% ========================================================
         FBCSP_Dataset = ...
             build_fbcsp_dataset( ...
             subj_list,...
             cfgFBCSP);
 
-        %% ============================================================
+        %% ========================================================
+        % ROI SELECTION
+        %% ========================================================
+        if cfgFBCSP.useROI
+            FBCSP_Dataset = ...
+                apply_fbcsp_roi_selection( ...
+                FBCSP_Dataset,...
+                cfgFBCSP);
+        end
+
+        %% ========================================================
         % FILTER BANK
-        %% ============================================================
+        %% ========================================================
         FBCSP_Dataset = ...
             apply_fbcsp_filterbank( ...
             FBCSP_Dataset,...
             cfgFBCSP);
-        %% ============================================================
+
+        %% ========================================================
         % SUBEPOCHS
-        %% ============================================================
+        %% ========================================================
         if cfgFBCSP.useSubEpochs
 
             parEpoch = ...
@@ -177,16 +265,12 @@ for iCase = 1:numel(numiCase)
 
             parEpoch.InField = ...
                 cfgFBCSP.signalField;
-
             parEpoch.OutField = ...
                 cfgFBCSP.signalField;
-
             parEpoch.fample = ...
                 FBCSP_Dataset.srate;
-
             parEpoch.t_epoch = ...
                 cfgFBCSP.subEpochLength;
-
             parEpoch.overlap_percent = ...
                 cfgFBCSP.subEpochOverlap;
 
@@ -196,7 +280,6 @@ for iCase = 1:numel(numiCase)
                 parEpoch);
 
             parMulti = struct();
-
             parMulti.Infield = ...
                 cfgFBCSP.signalField;
 
@@ -204,8 +287,10 @@ for iCase = 1:numel(numiCase)
                 multiEEG( ...
                 FBCSP_Dataset.trials,...
                 parMulti);
+
             fprintf('Trials after subepoching: %d\n', ...
                 numel(FBCSP_Dataset.trials));
+
             fprintf('\n');
             fprintf('================================\n');
             fprintf('SUBEPOCHING\n');
@@ -214,13 +299,36 @@ for iCase = 1:numel(numiCase)
                 cfgFBCSP.subEpochLength);
             fprintf('Overlap : %.1f %%\n', ...
                 cfgFBCSP.subEpochOverlap);
-
         end
-        %% ============================================================
-        % TRIAL-WISE VALIDATION
-        %% ============================================================
+
+        %% ========================================================
+        % RESULTS PREALLOCATION
+        %% ========================================================
         Results_TrialWise = struct();
 
+        IterTemplate = struct( ...
+            'classifier',     '', ...
+            'Iteration',      0, ...
+            'nTrainTrials',   0, ...
+            'nTestTrials',    0, ...
+            'nFeatures',      0, ...
+            'CSPModel',       [], ...
+            'MIModel',        [], ...
+            'Model',          struct(), ...
+            'TrainMetrics',   struct(), ...
+            'TestMetrics',    struct(), ...
+            'Ytrain_true',    [], ...
+            'Ytrain_pred',    [], ...
+            'Ytest_true',     [], ...
+            'Ytest_pred',     [], ...
+            'resTrain',       [], ...
+            'resTest',        [], ...
+            'case_id',        '', ...
+            'case_name',      '');
+
+        %% ========================================================
+        % TRIALWISE VALIDATION
+        %% ========================================================
         for iClf = 1:numel(cfgFBCSP.classifiers)
 
             classifierName = ...
@@ -228,6 +336,13 @@ for iCase = 1:numel(numiCase)
 
             cfgFBCSP.classifier = ...
                 classifierName;
+
+            % Preallocate iterations
+            Results_TrialWise.(classifierName).Iter = ...
+                repmat( ...
+                IterTemplate,...
+                1,...
+                cfgFBCSP.numIterations);
 
             fprintf('\n');
             fprintf('================================\n');
@@ -243,29 +358,63 @@ for iCase = 1:numel(numiCase)
                     iIter,...
                     cfgFBCSP.numIterations);
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % SPLIT
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 [TrainTrials,...
                     TestTrials] = ...
                     split_trialwise_trials( ...
                     FBCSP_Dataset,...
                     cfgFBCSP);
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % FEATURE EXTRACTION
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 Features = ...
                     run_fbcsp_features( ...
                     TrainTrials,...
                     TestTrials,...
                     cfgFBCSP);
+                %% ------------------------------------------------
+                % TSNE
+                %% ------------------------------------------------
+                if cfgFBCSP.doTSNE && iIter == 1
 
-                %% ----------------------------------------------------
+                    % t-SNE on filtered/unfiltered EEG
+                    parTSNE = tsneModelParams();
+                    parTSNE.exec = true;
+                    parTSNE.InField = 'eeg';
+                    parTSNE.OutField = 'TSNE';
+                    parTSNE.xfld = 'time';
+                    parTSNE.NumDimensions = 2;
+
+                    plot_fbcsp_tsne_eeg( ...
+                        TrainTrials,...
+                        TestTrials,...
+                        Features.Ytrain,...
+                        Features.Ytest,...
+                        outdir,...
+                        sprintf('%s_ITER_%02d', ...
+                        CaseCfg.name,...
+                        iIter),...
+                        parTSNE);
+
+                    % t-SNE / PCA on CSP/MI features
+                    plot_fbcsp_tsne( ...
+                        Features,...
+                        TrainTrials,...
+                        TestTrials,...
+                        outdir,...
+                        sprintf('%s_ITER_%02d', ...
+                        CaseCfg.name,...
+                        iIter));
+                end
+                %% ------------------------------------------------
                 % CLASSIFIER
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 parClassifier = struct();
-                parClassifier.InField = Features.SignalField;
+                parClassifier.InField = ...
+                    Features.SignalField;
 
                 [TrainEEG,...
                     TestEEG,...
@@ -278,21 +427,18 @@ for iCase = 1:numel(numiCase)
                     classifierName,...
                     parClassifier);
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % PREDICTION
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 parPredict = ...
                     mdlPredictParams();
 
                 parPredict.InField = ...
                     Features.SignalField;
-
                 parPredict.OutField = ...
                     PredField;
-
                 parPredict.ProbField = ...
                     ProbField;
-
                 parPredict.mdl = ...
                     outClassifier.mdl;
 
@@ -306,24 +452,22 @@ for iCase = 1:numel(numiCase)
                     TestEEG,...
                     parPredict);
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % LABELS
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 Ytrain_true = ...
                     [TrainEEG.trialType]';
-
                 Ytrain_pred = ...
                     [TrainEEG.(PredField)]';
 
                 Ytest_true = ...
                     [TestEEG.trialType]';
-
                 Ytest_pred = ...
                     [TestEEG.(PredField)]';
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % METRICS
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 TrainMetrics = ...
                     compute_classification_metrics( ...
                     Ytrain_true,...
@@ -334,65 +478,63 @@ for iCase = 1:numel(numiCase)
                     Ytest_true,...
                     Ytest_pred);
 
-                %% ----------------------------------------------------
+                %% ------------------------------------------------
                 % STORE RESULTS
-                %% ----------------------------------------------------
-                IterResult = struct();
+                %% ------------------------------------------------
+                IterResult = IterTemplate;
 
                 IterResult.classifier = ...
                     classifierName;
+                IterResult.Iteration = ...
+                    iIter;
 
                 IterResult.nTrainTrials = ...
                     numel(TrainTrials);
-
                 IterResult.nTestTrials = ...
                     numel(TestTrials);
-
                 IterResult.nFeatures = ...
                     Features.nFeatures;
 
                 IterResult.CSPModel = ...
                     Features.CSPModel;
-
                 IterResult.MIModel = ...
                     Features.MIModel;
-
                 IterResult.Model = ...
                     outClassifier;
 
                 IterResult.TrainMetrics = ...
                     TrainMetrics;
-
                 IterResult.TestMetrics = ...
                     TestMetrics;
 
                 IterResult.Ytrain_true = ...
                     Ytrain_true;
-
                 IterResult.Ytrain_pred = ...
                     Ytrain_pred;
 
                 IterResult.Ytest_true = ...
                     Ytest_true;
-
                 IterResult.Ytest_pred = ...
                     Ytest_pred;
 
                 IterResult.resTrain = ...
                     resTrain;
-
                 IterResult.resTest = ...
                     resTest;
 
+                IterResult.case_id = ...
+                    CaseCfg.case_id;
+                IterResult.case_name = ...
+                    CaseCfg.name;
+
                 Results_TrialWise.(classifierName).Iter(iIter) = ...
                     IterResult;
-
             end
         end
 
-        %% ============================================================
+        %% ========================================================
         % SUMMARY
-        %% ============================================================
+        %% ========================================================
         for iClf = 1:numel(cfgFBCSP.classifiers)
 
             classifierName = ...
@@ -420,87 +562,77 @@ for iCase = 1:numel(numiCase)
 
             Results_TrialWise.(classifierName).MeanAccuracy = ...
                 mean(allACC);
-
             Results_TrialWise.(classifierName).StdAccuracy = ...
                 std(allACC);
 
             Results_TrialWise.(classifierName).MeanBalancedAccuracy = ...
                 mean(allBA);
-
             Results_TrialWise.(classifierName).StdBalancedAccuracy = ...
                 std(allBA);
 
             Results_TrialWise.(classifierName).MeanF1 = ...
                 mean(allF1,'omitnan');
-
             Results_TrialWise.(classifierName).StdF1 = ...
                 std(allF1,'omitnan');
 
             Results_TrialWise.(classifierName).MeanMCC = ...
                 mean(allMCC,'omitnan');
-
             Results_TrialWise.(classifierName).StdMCC = ...
                 std(allMCC,'omitnan');
 
             Results_TrialWise.(classifierName).cfg = ...
                 cfgFBCSP;
 
+            Results_TrialWise.(classifierName).CaseID = ...
+                CaseCfg.case_id;
+            Results_TrialWise.(classifierName).CaseName = ...
+                CaseCfg.name;
+
             fprintf('\n');
             fprintf('================================\n');
             fprintf('%s SUMMARY\n', ...
                 classifierName);
             fprintf('================================\n');
-
             fprintf('Mean Accuracy         : %.2f %%\n', ...
                 100*Results_TrialWise.(classifierName).MeanAccuracy);
-
             fprintf('Std Accuracy          : %.2f %%\n', ...
                 100*Results_TrialWise.(classifierName).StdAccuracy);
-
             fprintf('Mean BalancedAccuracy : %.2f %%\n', ...
                 100*Results_TrialWise.(classifierName).MeanBalancedAccuracy);
-
             fprintf('Std BalancedAccuracy  : %.2f %%\n', ...
                 100*Results_TrialWise.(classifierName).StdBalancedAccuracy);
-
             fprintf('Mean F1               : %.4f\n', ...
                 Results_TrialWise.(classifierName).MeanF1);
-
             fprintf('Std F1                : %.4f\n', ...
                 Results_TrialWise.(classifierName).StdF1);
-
             fprintf('Mean MCC              : %.4f\n', ...
                 Results_TrialWise.(classifierName).MeanMCC);
-
             fprintf('Std MCC               : %.4f\n', ...
                 Results_TrialWise.(classifierName).StdMCC);
-
             fprintf('Features : %d\n', ...
                 Results_TrialWise.(classifierName).Iter(1).nFeatures);
-
             fprintf('FilterBank : %s\n', ...
                 cfgFBCSP.filterBankName);
-
             fprintf('Window : %.3f %.3f\n', ...
                 cfgFBCSP.time_window(1),...
                 cfgFBCSP.time_window(2));
         end
 
-        %% ============================================================
+        %% ========================================================
         % SAVE
-        %% ============================================================
-        
+        %% ========================================================
         saveName = sprintf( ...
             '%s_%s.mat',...
             CaseCfg.case_id,...
             CaseCfg.name);
+
         save( ...
             fullfile(outdir,saveName),...
             'Results_TrialWise',...
             'cfgFBCSP',...
             'CaseCfg',...
             '-v7.3');
-        % 'FBCSP_Dataset',...
+
     catch ME
 
         fprintf('\n');
@@ -512,3 +644,10 @@ for iCase = 1:numel(numiCase)
 
     end
 end
+
+set(0,'DefaultFigureVisible',origState);
+
+fprintf('\n');
+fprintf('================================\n');
+fprintf('STEP9 FBCSP TRIALWISE COMPLETED\n');
+fprintf('================================\n');

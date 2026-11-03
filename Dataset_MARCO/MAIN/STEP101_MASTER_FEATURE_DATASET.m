@@ -1,5 +1,6 @@
 %% =========================================================================
-% STEP10_MASTER_FEATURE_DATASET
+% STEP101_MASTER_FEATURE_DATASET
+% old STEP10_MASTER_FEATURE_DATASET
 %
 % Creates unified trial-wise feature dataset
 %
@@ -143,7 +144,7 @@ fprintf('BP Features : %d\n', ...
 
 outdir = fullfile( ...
     step2_indir,...
-    'STEP10_MASTER_DATASET');
+    'STEP101_MASTER_DATASET');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);

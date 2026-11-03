@@ -77,13 +77,20 @@ step2_indir = ...
 
 load(fullfile(step2_indir,'subj_list.mat'));
 
+MAIN_ROI
+
+ROI = orderfields(ROI);
 %% ============================================================
 % OUTPUT
 %% ============================================================
 outputdirCASE = 'STEP9_FBCSP_LOSO';
 
 Cases = build_fbcsp_cases();
-numiCase = 25;
+numiCase = [ ...
+    1 ...   % FULL_CD
+    2 ...   % ERP_GUIDED_CD
+    7 ...   % CONVERGENCE_ERP_GUIDED_CD
+    14];    % CONVERGENCE_ERP_GUIDED_CD_CSP8_MI16
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));
@@ -104,26 +111,7 @@ for iCase = 1:numel(numiCase)
 
         cfgFBCSP = struct();
 
-        fprintf('\n');
-        fprintf('================================\n');
-        fprintf('EXPERIMENT\n');
-        fprintf('================================\n');
-        fprintf('Group : %s\n', ...
-            CaseCfg.group);
-        fprintf('Case  : %s\n', ...
-            CaseCfg.name);
-        fprintf('Window : %.3f %.3f\n', ...
-            CaseCfg.time_window(1),...
-            CaseCfg.time_window(2));
 
-        fprintf('FilterBank : %s\n', ...
-            CaseCfg.filterBankName);
-
-        fprintf('CSP : %d\n', ...
-            CaseCfg.csp_components);
-
-        fprintf('MI : %d\n', ...
-            CaseCfg.mi_k);
         %% ------------------------------------------------------------
         % RANDOM SEED
         %% ------------------------------------------------------------
@@ -184,9 +172,28 @@ for iCase = 1:numel(numiCase)
         % CLASSIFIERS
         %% ------------------------------------------------------------
 
+        
         cfgFBCSP.classifiers = ...
             CaseCfg.classifiers;
 
+        cfgFBCSP.classifiers = {'QDA'};
+        %% ------------------------------------------------------------
+        % TSNE
+        %% ------------------------------------------------------------
+        cfgFBCSP.doTSNE = ...
+            CaseCfg.doTSNE;
+        %% ------------------------------------------------------------
+        % ROI
+        %% ------------------------------------------------------------
+        cfgFBCSP.useROI = ...
+            CaseCfg.useROI;
+
+        if isfield(CaseCfg,'analysis_rois')
+            cfgFBCSP.analysis_rois = ...
+                CaseCfg.analysis_rois;
+        end
+
+        cfgFBCSP.rois = ROI;
         %% ------------------------------------------------------------
         % DATASET FIELDS
         %% ------------------------------------------------------------
@@ -206,7 +213,36 @@ for iCase = 1:numel(numiCase)
         cfgFBCSP.kfold = 4;
         cfgFBCSP.numIterations = 100;
 
+        fprintf('\n');
+        fprintf('================================\n');
+        fprintf('EXPERIMENT\n');
+        fprintf('================================\n');
+        fprintf('Group : %s\n', ...
+            CaseCfg.group);
+        fprintf('Case  : %s\n', ...
+            CaseCfg.name);
+        fprintf('Window : %.3f %.3f\n', ...
+            CaseCfg.time_window(1),...
+            CaseCfg.time_window(2));
 
+        fprintf('FilterBank : %s\n', ...
+            CaseCfg.filterBankName);
+
+        fprintf('CSP : %d\n', ...
+            CaseCfg.csp_components);
+
+        fprintf('MI : %d\n', ...
+            CaseCfg.mi_k);
+        fprintf('Use ROI : %d\n', ...
+            cfgFBCSP.useROI);
+
+        if cfgFBCSP.useROI
+            fprintf('ROIs:\n');
+            disp(cfgFBCSP.analysis_rois);
+        end
+
+        fprintf('TSNE     : %d\n', ...
+            cfgFBCSP.doTSNE);
         %% ============================================================
         % BUILD DATASET
         %% ============================================================
@@ -214,6 +250,15 @@ for iCase = 1:numel(numiCase)
         FBCSP_Dataset = build_fbcsp_dataset( ...
             subj_list,...
             cfgFBCSP);
+        %% ============================================================
+        % ROI SELECTION
+        %% ============================================================
+        if cfgFBCSP.useROI
+            FBCSP_Dataset = ...
+                apply_fbcsp_roi_selection( ...
+                FBCSP_Dataset,...
+                cfgFBCSP);
+        end
         %% ============================================================
         % FILTER BANK
         %% ============================================================
@@ -348,7 +393,37 @@ for iCase = 1:numel(numiCase)
                     TrainTrials,...
                     TestTrials,...
                     cfgFBCSP);
+                %% ------------------------------------------------------------
+                % TSNE
+                %% ------------------------------------------------------------
+                if cfgFBCSP.doTSNE && iSub == 1
+                    parTSNE = tsneModelParams();
+                    parTSNE.exec = true;
+                    parTSNE.InField = 'eeg';
+                    parTSNE.OutField = 'TSNE';
+                    parTSNE.xfld = 'time';
+                    parTSNE.NumDimensions = 2;
 
+                    plot_fbcsp_tsne_eeg( ...
+                        TrainTrials,...
+                        TestTrials,...
+                        Features.Ytrain,...
+                        Features.Ytest,...
+                        outdir,...
+                        sprintf('%s_FOLD_%02d', ...
+                        CaseCfg.name,...
+                        iSub),...
+                        parTSNE);
+
+                    plot_fbcsp_tsne( ...
+                        Features,...
+                        TrainTrials,...
+                        TestTrials,...
+                        outdir,...
+                        sprintf('%s_FOLD_%02d', ...
+                        CaseCfg.name,...
+                        iSub));
+                end
                 %% ------------------------------------------------------------
                 % CLASSIFIER
                 %% ------------------------------------------------------------
@@ -373,7 +448,7 @@ for iCase = 1:numel(numiCase)
                     mdlPredictParams();
 
                 parPredict.InField = Features.SignalField;
- 
+
                 parPredict.OutField = ...
                     PredField;
 
@@ -480,6 +555,12 @@ for iCase = 1:numel(numiCase)
                 FoldResult.resTest = ...
                     resTest;
 
+                FoldResult.case_id = ...
+                    CaseCfg.case_id;
+
+                FoldResult.case_name = ...
+                    CaseCfg.name;
+
                 Results_LOSO.(classifierName).Fold(iSub) = ...
                     FoldResult;
 
@@ -540,6 +621,13 @@ for iCase = 1:numel(numiCase)
 
             Results_LOSO.(classifierName).StdMCC = ...
                 std(allMCC,'omitnan');
+
+            Results_LOSO.(classifierName).CaseID = ...
+                CaseCfg.case_id;
+
+            Results_LOSO.(classifierName).CaseName = ...
+                CaseCfg.name;
+
 
             fprintf('\n');
             fprintf('================================\n');

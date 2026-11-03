@@ -1,8 +1,9 @@
 %% =========================================================================
-% STEP10_RANK_MASTER_FEATURES
+% STEP102_RANK_MASTER_FEATURES
+% old STEP11_RANK_MASTER_FEATURES
 %
-% Ranking univariato delle feature
-% Consonanza vs Dissonanza
+% Ranking features
+% Consonance vs Dissonance
 %
 % Input:
 %   MASTER_FEATURE_DATASET.mat
@@ -26,7 +27,7 @@ projectRoot = ...
 
 load(fullfile( ...
     projectRoot,...
-    'STEP10_MASTER_DATASET',...
+    'STEP101_MASTER_DATASET',...
     'MASTER_FEATURE_DATASET.mat'));
 
 X = MasterDataset.X;
@@ -215,7 +216,7 @@ disp(Ranking(1:min(30,height(Ranking)),:))
 
 outdir = fullfile( ...
     projectRoot,...
-    'STEP10_FEATURE_RANKING');
+    'STEP102_FEATURE_RANKING');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);

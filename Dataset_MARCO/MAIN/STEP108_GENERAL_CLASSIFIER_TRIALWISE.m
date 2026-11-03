@@ -1,0 +1,459 @@
+%% =========================================================================
+% STEP108_GENERAL_CLASSIFIER_TRIALWISE
+%
+% CLASSIFICATION BENCHMARK
+%
+% DATASETS
+%
+%   FULL_264
+%   ERP_ONLY_156
+%   BANDPOWER_ONLY_108
+%   REDUCED_29
+%
+%% =========================================================================
+
+clear
+close all
+clc
+
+%% =========================================================================
+% PATHS
+%% =========================================================================
+
+projectRoot = ...
+    'C:\Users\mirco\Desktop\X-SONANCE\Dataset_MARCO';
+
+indir = fullfile( ...
+    projectRoot,...
+    'STEP105_FINAL_DATASETS');
+
+outdir = fullfile( ...
+    projectRoot,...
+    'STEP108_GENERAL_CLASSIFIER_TRIALWISE');
+
+if ~exist(outdir,'dir')
+    mkdir(outdir);
+end
+
+%% =========================================================================
+% CONFIG
+%% =========================================================================
+
+cfgCLS = struct();
+
+cfgCLS.randomSeed = 10;
+rng(cfgCLS.randomSeed)
+
+
+cfgCLS.zscore = true;
+cfgCLS.classifiers = { ...
+    'QDA',...
+    'KNN',...
+    'NB'};
+
+cfgCLS.trainRatio = 0.80;
+cfgCLS.testRatio  = 0.20;
+
+cfgCLS.numIterations = 25;
+
+%% =========================================================================
+% DATASETS
+%% =========================================================================
+
+DatasetInfo = {
+    'DATASET_FULL_264.mat'           'FULL_264'
+    'DATASET_ERP_ONLY_156.mat'       'ERP_ONLY_156'
+    'DATASET_BANDPOWER_ONLY_108.mat' 'BANDPOWER_ONLY_108'
+    'DATASET_REDUCED_29.mat'         'REDUCED_29'
+    };
+
+%% =========================================================================
+% LOOP DATASETS
+%% =========================================================================
+
+for iDataset = 1:size(DatasetInfo,1)
+
+    fprintf('\n');
+    fprintf('=================================================\n');
+    fprintf('DATASET %d/%d\n', ...
+        iDataset,...
+        size(DatasetInfo,1));
+    fprintf('=================================================\n');
+
+    datasetFile = DatasetInfo{iDataset,1};
+    variableName = DatasetInfo{iDataset,2};
+
+    S = load(fullfile(indir,datasetFile));
+    Dataset = S.(variableName);
+
+    DatasetName = variableName;
+
+    fprintf('Dataset : %s\n',DatasetName);
+
+    %% =====================================================================
+    % CHECKS
+    %% =====================================================================
+
+    assert(size(Dataset.X,1)==length(Dataset.Y))
+
+    fprintf('Trials   : %d\n', ...
+        size(Dataset.X,1));
+
+    fprintf('Features : %d\n', ...
+        size(Dataset.X,2));
+
+    %% =====================================================================
+    % RESULTS
+    %% =====================================================================
+
+    Results_TrialWise = struct();
+
+    Results_TrialWise.DatasetName = ...
+        DatasetName;
+
+    IterTemplate = struct( ...
+        'DatasetName',DatasetName,...
+        'classifier','',...
+        'Iteration',0,...
+        'nTrainTrials',0,...
+        'nTestTrials',0,...
+        'nFeatures',0,...
+        'ModelType','',...
+        'Model',struct(),...
+        'TrainMetrics',struct(),...
+        'TestMetrics',struct(),...
+        'Ytrain_true',[],...
+        'Ytrain_pred',[],...
+        'Ytest_true',[],...
+        'Ytest_pred',[],...
+        'resTrain',[],...
+        'resTest',[]);
+
+    %% =====================================================================
+    % CLASSIFIERS
+    %% =====================================================================
+
+    tabulate(Dataset.Y)
+    
+    %% ------------------------------------------------------------
+    % STRATIFIED SPLIT
+    %% ------------------------------------------------------------
+    CV = cell(1,cfgCLS.numIterations);
+
+    for iIter = 1:cfgCLS.numIterations
+        CV{iIter} = cvpartition( ...
+            Dataset.Y,...
+            'HoldOut',...
+            cfgCLS.testRatio);
+    end
+
+    for iClf = 1:numel(cfgCLS.classifiers)
+
+        classifierName = ...
+            cfgCLS.classifiers{iClf};
+
+        Results_TrialWise.(classifierName).Iter = ...
+            repmat( ...
+            IterTemplate,...
+            1,...
+            cfgCLS.numIterations);
+
+        fprintf('\n');
+        fprintf('================================\n');
+        fprintf('CLASSIFIER: %s\n', ...
+            classifierName);
+        fprintf('================================\n');
+
+        %% ================================================================
+        % ITERATIONS
+        %% ================================================================
+
+        for iIter = 1:cfgCLS.numIterations
+
+            fprintf('\n');
+            fprintf('--------------------------------\n');
+            fprintf('ITERATION %d/%d\n', ...
+                iIter,...
+                cfgCLS.numIterations);
+
+            cv = CV{iIter};
+
+            idxTrain = training(cv);
+            idxTest  = test(cv);
+
+            Xtrain = ...
+                Dataset.X(idxTrain,:);
+
+            Ytrain = ...
+                Dataset.Y(idxTrain);
+
+            Xtest = ...
+                Dataset.X(idxTest,:);
+
+            Ytest = ...
+                Dataset.Y(idxTest);
+
+            %% ------------------------------------------------------------
+            % ZSCORE TRAIN ONLY
+            %% ------------------------------------------------------------
+            if cfgCLS.zscore
+                mu = mean(Xtrain,1);
+
+                sigma = std(Xtrain,[],1);
+
+                sigma(sigma==0) = 1;
+
+                Xtrain = ...
+                    (Xtrain - mu)./sigma;
+
+                Xtest = ...
+                    (Xtest - mu)./sigma;
+            end
+            %% ------------------------------------------------------------
+            % FEATURE BUILDER
+            %% ------------------------------------------------------------
+
+            Features = ...
+                run_masterdataset_features( ...
+                Xtrain,...
+                Ytrain,...
+                Xtest,...
+                Ytest);
+
+            %% ------------------------------------------------------------
+            % CLASSIFIER
+            %% ------------------------------------------------------------
+
+            parClassifier = struct();
+
+            parClassifier.InField = ...
+                Features.SignalField;
+
+            [TrainEEG,...
+             TestEEG,...
+             outClassifier,...
+             PredField,...
+             ProbField] = ...
+                run_classifier_fold( ...
+                Features.TrainEEG,...
+                Features.TestEEG,...
+                classifierName,...
+                parClassifier);
+
+            %% ------------------------------------------------------------
+            % PREDICTION
+            %% ------------------------------------------------------------
+
+            parPredict = ...
+                mdlPredictParams();
+
+            parPredict.InField = ...
+                Features.SignalField;
+
+            parPredict.OutField = ...
+                PredField;
+
+            parPredict.ProbField = ...
+                ProbField;
+
+            parPredict.mdl = ...
+                outClassifier.mdl;
+
+            [TrainEEG,resTrain] = ...
+                mdlPredict( ...
+                TrainEEG,...
+                parPredict);
+
+            [TestEEG,resTest] = ...
+                mdlPredict( ...
+                TestEEG,...
+                parPredict);
+
+            %% ------------------------------------------------------------
+            % LABELS
+            %% ------------------------------------------------------------
+
+            Ytrain_true = ...
+                [TrainEEG.trialType]';
+
+            Ytrain_pred = ...
+                [TrainEEG.(PredField)]';
+
+            Ytest_true = ...
+                [TestEEG.trialType]';
+
+            Ytest_pred = ...
+                [TestEEG.(PredField)]';
+
+            %% ------------------------------------------------------------
+            % METRICS
+            %% ------------------------------------------------------------
+
+            TrainMetrics = ...
+                compute_classification_metrics( ...
+                Ytrain_true,...
+                Ytrain_pred);
+
+            TestMetrics = ...
+                compute_classification_metrics( ...
+                Ytest_true,...
+                Ytest_pred);
+
+            %% ------------------------------------------------------------
+            % STORE
+            %% ------------------------------------------------------------
+
+            IterResult = IterTemplate;
+
+            IterResult.DatasetName = ...
+                DatasetName;
+
+            IterResult.classifier = ...
+                classifierName;
+
+            IterResult.Iteration = ...
+                iIter;
+
+            IterResult.nTrainTrials = ...
+                numel(Ytrain_true);
+
+            IterResult.nTestTrials = ...
+                numel(Ytest_true);
+
+            IterResult.nFeatures = ...
+                Features.nFeatures;
+
+            IterResult.Model = ...
+                outClassifier;
+
+            IterResult.ModelType = ...
+                classifierName;
+
+            IterResult.TrainMetrics = ...
+                TrainMetrics;
+
+            IterResult.TestMetrics = ...
+                TestMetrics;
+
+            IterResult.Ytrain_true = ...
+                Ytrain_true;
+
+            IterResult.Ytrain_pred = ...
+                Ytrain_pred;
+
+            IterResult.Ytest_true = ...
+                Ytest_true;
+
+            IterResult.Ytest_pred = ...
+                Ytest_pred;
+
+            IterResult.resTrain = ...
+                resTrain;
+
+            IterResult.resTest = ...
+                resTest;
+
+            Results_TrialWise.(classifierName).Iter(iIter) = ...
+                IterResult;
+
+        end
+
+        %% ================================================================
+        % SUMMARY
+        %% ================================================================
+
+        allACC = arrayfun(@(x) ...
+            x.TestMetrics.ACC,...
+            Results_TrialWise.(classifierName).Iter);
+
+        allBA = arrayfun(@(x) ...
+            x.TestMetrics.BA,...
+            Results_TrialWise.(classifierName).Iter);
+
+        allF1 = arrayfun(@(x) ...
+            x.TestMetrics.F1,...
+            Results_TrialWise.(classifierName).Iter);
+
+        allMCC = arrayfun(@(x) ...
+            x.TestMetrics.MCC,...
+            Results_TrialWise.(classifierName).Iter);
+
+        Results_TrialWise.(classifierName).MeanAccuracy = ...
+            mean(allACC);
+
+        Results_TrialWise.(classifierName).StdAccuracy = ...
+            std(allACC);
+
+        Results_TrialWise.(classifierName).MeanBalancedAccuracy = ...
+            mean(allBA);
+
+        Results_TrialWise.(classifierName).StdBalancedAccuracy = ...
+            std(allBA);
+
+        Results_TrialWise.(classifierName).MeanF1 = ...
+            mean(allF1,'omitnan');
+
+        Results_TrialWise.(classifierName).StdF1 = ...
+            std(allF1,'omitnan');
+
+        Results_TrialWise.(classifierName).MeanMCC = ...
+            mean(allMCC,'omitnan');
+
+        Results_TrialWise.(classifierName).StdMCC = ...
+            std(allMCC,'omitnan');
+
+        Results_TrialWise.(classifierName).cfg = ...
+            cfgCLS;
+
+        fprintf('\n');
+        fprintf('%s RESULTS\n', ...
+            classifierName);
+
+        fprintf('ACC : %.2f %%\n', ...
+            100 * ...
+            Results_TrialWise.(classifierName).MeanAccuracy);
+
+        fprintf('BA  : %.2f %%\n', ...
+            100 * ...
+            Results_TrialWise.(classifierName).MeanBalancedAccuracy);
+
+        fprintf('F1  : %.4f\n', ...
+            Results_TrialWise.(classifierName).MeanF1);
+
+        fprintf('MCC : %.4f\n', ...
+            Results_TrialWise.(classifierName).MeanMCC);
+
+    end
+
+    %% =====================================================================
+    % SAVE
+    %% =====================================================================
+
+    % save( ...
+    %     fullfile( ...
+    %     outdir,...
+    %     sprintf('%s_TRIALWISE.mat', ...
+    %     DatasetName)),...
+    %     'Results_TrialWise',...
+    %     'cfgCLS',...
+    %     'Dataset',...
+    %     '-v7.3');
+    save( ...
+        fullfile( ...
+        outdir,...
+        sprintf('%s_TRIALWISE.mat', ...
+        DatasetName)),...
+        'Results_TrialWise',...
+        'cfgCLS',...
+        '-v7.3');
+
+end
+
+%% =========================================================================
+% COMPLETED
+%% =========================================================================
+
+fprintf('\n');
+fprintf('=================================================\n');
+fprintf('STEP108 GENERAL CLASSIFIER TRIALWISE COMPLETED\n');
+fprintf('=================================================\n');

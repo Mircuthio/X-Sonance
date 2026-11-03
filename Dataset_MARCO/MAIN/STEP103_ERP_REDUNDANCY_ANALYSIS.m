@@ -1,7 +1,8 @@
 %% =========================================================================
-% STEP10B_ERP_REDUNDANCY_ANALYSIS
+% STEP103_ERP_REDUNDANCY_ANALYSIS
+% old STEP10B_ERP_REDUNDANCY_ANALYSIS
 %
-% Analisi ridondanza delle migliori feature ERP
+% Best ERP features redundancy analysis
 %
 % INPUT
 %   FeatureRanking.mat
@@ -27,11 +28,11 @@ projectRoot = ...
 
 rankDir = fullfile( ...
     projectRoot,...
-    'STEP10_FEATURE_RANKING');
+    'STEP102_FEATURE_RANKING');
 
 datasetDir = fullfile( ...
     projectRoot,...
-    'STEP10_MASTER_DATASET');
+    'STEP101_MASTER_DATASET');
 
 %% =========================================================================
 % LOAD
@@ -211,7 +212,7 @@ end
 
 outdir = fullfile( ...
     projectRoot,...
-    'STEP10_REDUNDANCY');
+    'STEP103_REDUNDANCY');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
