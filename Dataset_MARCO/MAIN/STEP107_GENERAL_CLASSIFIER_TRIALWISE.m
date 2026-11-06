@@ -1,5 +1,5 @@
 %% =========================================================================
-% STEP108_GENERAL_CLASSIFIER_TRIALWISE
+% STEP107_GENERAL_CLASSIFIER_TRIALWISE
 %
 % CLASSIFICATION BENCHMARK
 %
@@ -7,7 +7,7 @@
 %
 %   FULL_264
 %   ERP_ONLY_156
-%   BANDPOWER_ONLY_108
+%   BANDPOWER_ONLY_107
 %   REDUCED_29
 %
 %% =========================================================================
@@ -29,7 +29,7 @@ indir = fullfile( ...
 
 outdir = fullfile( ...
     projectRoot,...
-    'STEP108_GENERAL_CLASSIFIER_TRIALWISE');
+    'STEP107_GENERAL_CLASSIFIER_TRIALWISE');
 
 if ~exist(outdir,'dir')
     mkdir(outdir);
@@ -455,5 +455,5 @@ end
 
 fprintf('\n');
 fprintf('=================================================\n');
-fprintf('STEP108 GENERAL CLASSIFIER TRIALWISE COMPLETED\n');
+fprintf('STEP107 GENERAL CLASSIFIER TRIALWISE COMPLETED\n');
 fprintf('=================================================\n');

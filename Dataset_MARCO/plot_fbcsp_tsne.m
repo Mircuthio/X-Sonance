@@ -36,6 +36,7 @@ Ytest  = Features.Ytest;
 assert(size(Xtrain,2) == size(Xtest,2), ...
     'Train/test feature dimension mismatch');
 
+prefix = strrep(prefix, '_', ' ');
 %% ============================================================
 % SUBJECT IDS
 %% ============================================================

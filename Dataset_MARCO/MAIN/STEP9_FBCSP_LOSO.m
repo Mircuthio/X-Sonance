@@ -86,11 +86,12 @@ ROI = orderfields(ROI);
 outputdirCASE = 'STEP9_FBCSP_LOSO';
 
 Cases = build_fbcsp_cases();
-numiCase = [ ...
-    1 ...   % FULL_CD
-    2 ...   % ERP_GUIDED_CD
-    7 ...   % CONVERGENCE_ERP_GUIDED_CD
-    14];    % CONVERGENCE_ERP_GUIDED_CD_CSP8_MI16
+numiCase = 1;
+% [ ...
+%     1 ...   % FULL_CD
+%     2 ...   % ERP_GUIDED_CD
+%     7 ...   % CONVERGENCE_ERP_GUIDED_CD
+%     14];    % CONVERGENCE_ERP_GUIDED_CD_CSP8_MI16
 for iCase = 1:numel(numiCase)
     try
         CaseCfg = Cases(numiCase(iCase));
@@ -176,7 +177,7 @@ for iCase = 1:numel(numiCase)
         cfgFBCSP.classifiers = ...
             CaseCfg.classifiers;
 
-        cfgFBCSP.classifiers = {'QDA'};
+        cfgFBCSP.classifiers = {'KNN'};
         %% ------------------------------------------------------------
         % TSNE
         %% ------------------------------------------------------------
@@ -187,6 +188,9 @@ for iCase = 1:numel(numiCase)
         %% ------------------------------------------------------------
         cfgFBCSP.useROI = ...
             CaseCfg.useROI;
+
+        cfgFBCSP.chanlocs = ...
+            subj_list(1).data_trials(1).chanlocs;
 
         if isfield(CaseCfg,'analysis_rois')
             cfgFBCSP.analysis_rois = ...

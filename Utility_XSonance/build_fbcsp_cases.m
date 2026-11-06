@@ -54,6 +54,7 @@ Cases(iCase).class_codes=[7 8];
 Cases(iCase).class_labels={'Consonant','Dissonant'};
 Cases(iCase).time_window=[-0.5 1.0];
 
+
 iCase=iCase+1;
 Cases(iCase)=base;
 Cases(iCase).case_id='P20_02';
@@ -62,6 +63,7 @@ Cases(iCase).name='ERP_GUIDED_CD';
 Cases(iCase).class_codes=[7 8];
 Cases(iCase).class_labels={'Consonant','Dissonant'};
 Cases(iCase).time_window=[0.17 0.53];
+
 
 iCase=iCase+1;
 Cases(iCase)=base;

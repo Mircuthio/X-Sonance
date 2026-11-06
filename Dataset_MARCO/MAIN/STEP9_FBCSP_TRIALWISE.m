@@ -75,6 +75,12 @@ Cases = build_fbcsp_cases();
 
 % Select one or more cases
 numiCase = 1;
+% [ ...
+%     1 ...   % FULL_CD
+%     2 ...   % ERP_GUIDED_CD
+%     7 ...   % CONVERGENCE_ERP_GUIDED_CD
+%     14 ...  % CONVERGENCE_CON_CONTROL
+%     15];    % CONVERGENCE_DIS_CONTROL
 
 for iCase = 1:numel(numiCase)
 
@@ -156,7 +162,7 @@ for iCase = 1:numel(numiCase)
         %% --------------------------------------------------------
         cfgFBCSP.classifiers = ...
             CaseCfg.classifiers;
-        cfgFBCSP.classifiers = {'QDA'};
+        cfgFBCSP.classifiers = {'KNN'};
         %% --------------------------------------------------------
         % TSNE
         %% --------------------------------------------------------
@@ -171,7 +177,8 @@ for iCase = 1:numel(numiCase)
         %% ------------------------------------------------------------
         cfgFBCSP.useROI = ...
             CaseCfg.useROI;
-
+        cfgFBCSP.chanlocs = ...
+            subj_list(1).data_trials(1).chanlocs;
         if isfield(CaseCfg,'analysis_rois')
             cfgFBCSP.analysis_rois = ...
                 CaseCfg.analysis_rois;
@@ -245,6 +252,8 @@ for iCase = 1:numel(numiCase)
                 apply_fbcsp_roi_selection( ...
                 FBCSP_Dataset,...
                 cfgFBCSP);
+            fprintf('Channels after ROI: %d\n', ...
+                FBCSP_Dataset.nChannels);
         end
 
         %% ========================================================
